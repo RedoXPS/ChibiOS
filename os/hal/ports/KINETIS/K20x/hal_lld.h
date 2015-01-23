@@ -25,8 +25,7 @@
 #ifndef _HAL_LLD_H_
 #define _HAL_LLD_H_
 
-#include "mk20d5.h"
-#include "kinetis_registry.h"
+#include "kinetis.h"
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -44,15 +43,6 @@
 #define PLATFORM_NAME           "Kinetis"
 /** @} */
 
-/**
- * @brief   Maximum system and core clock (f_SYS) frequency.
- */
-#define KINETIS_SYSCLK_MAX      48000000
-
-/**
- * @brief   Maximum bus clock (f_BUS) frequency.
- */
-#define KINETIS_BUSCLK_MAX      24000000
 
 /**
  * @name    Internal clock sources
@@ -259,7 +249,7 @@ typedef uint32_t halrtcnt_t;
 extern "C" {
 #endif
   void hal_lld_init(void);
-  void mk20d50_clock_init(void);
+  void k20x_clock_init(void);
 #ifdef __cplusplus
 }
 #endif

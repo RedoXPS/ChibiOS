@@ -27,8 +27,6 @@
 
 #if HAL_USE_SERIAL || defined(__DOXYGEN__)
 
-#include "mk20d5.h"
-
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
@@ -176,35 +174,33 @@ static void configure_uart(UART_TypeDef *uart, const SerialConfig *config)
 /*===========================================================================*/
 
 /* TODO:
- *   UART0_Error is Vector84
- *   UART1_Error is Vector8C
- *   UART2_Error is Vector94
+ *   UARTx_ERROR handlers
  */
 
 #if KINETIS_SERIAL_USE_UART0 || defined(__DOXYGEN__)
-CH_IRQ_HANDLER(Vector80) {
+OSAL_IRQ_HANDLER(KINETIS_SERIAL0_IRQ_VECTOR) {
 
-  CH_IRQ_PROLOGUE();
+  OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD1);
-  CH_IRQ_EPILOGUE();
+  OSAL_IRQ_EPILOGUE();
 }
 #endif
 
 #if KINETIS_SERIAL_USE_UART1 || defined(__DOXYGEN__)
-CH_IRQ_HANDLER(Vector88) {
+OSAL_IRQ_HANDLER(KINETIS_SERIAL1_IRQ_VECTOR) {
 
-  CH_IRQ_PROLOGUE();
+  OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD2);
-  CH_IRQ_EPILOGUE();
+  OSAL_IRQ_EPILOGUE();
 }
 #endif
 
 #if KINETIS_SERIAL_USE_UART2 || defined(__DOXYGEN__)
-CH_IRQ_HANDLER(Vector90) {
+OSAL_IRQ_HANDLER(KINETIS_SERIAL2_IRQ_VECTOR) {
 
-  CH_IRQ_PROLOGUE();
+  OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD3);
-  CH_IRQ_EPILOGUE();
+  OSAL_IRQ_EPILOGUE();
 }
 #endif
 

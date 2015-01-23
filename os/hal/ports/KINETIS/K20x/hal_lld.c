@@ -80,7 +80,7 @@ void hal_lld_init(void) {
 }
 
 /**
- * @brief   MK20D5 clock initialization.
+ * @brief   K20x clock initialization.
  * @note    All the involved constants come from the file @p board.h.
  * @note    This function is meant to be invoked early during the system
  *          initialization, it is usually invoked from the file
@@ -89,7 +89,7 @@ void hal_lld_init(void) {
  *
  * @special
  */
-void mk20d50_clock_init(void) {
+void k20x_clock_init(void) {
 #if !KINETIS_NO_INIT
 
 #if KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE
@@ -166,12 +166,17 @@ void mk20d50_clock_init(void) {
   /*
    * Now in FBE mode
    */
-
+  #if KINETIS_SYSCLK_MAX == 48000000
   /* Config PLL input for 2 MHz */
-  MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000) - 1);
-
+  MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000UL) - 1);
   /* Config PLL for 96 MHz output */
   MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
+  #elif KINETIS_SYSCLK_MAX == 72000000
+  /* Config PLL input for 2.667 MHz */
+  MCG->C5 = MCG_C5_PRDIV0(5);//(KINETIS_XTAL_FREQUENCY / 2667000UL) - 1);
+  /* Config PLL for 96 MHz output */
+  MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(3);
+  #endif
 
   /* Wait for PLL to start using crystal as its input */
   while (!(MCG->S & MCG_S_PLLST));

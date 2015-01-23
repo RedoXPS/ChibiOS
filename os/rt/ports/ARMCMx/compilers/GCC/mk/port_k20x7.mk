@@ -1,4 +1,4 @@
-# List of the ChibiOS/RT Cortex-M4 K20x port files.
+# List of the ChibiOS/RT Cortex-M4 K20x7 port files.
 PORTSRC = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/crt0.c \
           $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/vectors.c \
           ${CHIBIOS}/os/rt/ports/ARMCMx/chcore.c \
@@ -8,7 +8,7 @@ PORTASM = $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/chcoreasm_v7m.s
 
 PORTINC = ${CHIBIOS}/os/ext/CMSIS/include \
           ${CHIBIOS}/os/ext/CMSIS/KINETIS \
-          ${CHIBIOS}/os/common/ports/ARMCMx/devices/K20x \
+          ${CHIBIOS}/os/common/ports/ARMCMx/devices/K20x7 \
           ${CHIBIOS}/os/rt/ports/ARMCMx \
           ${CHIBIOS}/os/rt/ports/ARMCMx/compilers/GCC
 

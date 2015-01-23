@@ -137,7 +137,7 @@ static void spi_stop_xfer(SPIDriver *spip)
 /* Driver interrupt handlers.                                                */
 /*===========================================================================*/
 
-OSAL_IRQ_HANDLER(Vector40) {
+OSAL_IRQ_HANDLER(KINETIS_DMA0_IRQ_VECTOR) {
   OSAL_IRQ_PROLOGUE();
 
   /* Clear bit 0 in Interrupt Request Register (INT) by writing 0 to CINT */

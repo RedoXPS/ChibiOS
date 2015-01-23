@@ -30,11 +30,6 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
-#define KINETIS_PIT0_HANDLER    VectorB8
-#define KINETIS_PIT1_HANDLER    VectorBC
-#define KINETIS_PIT2_HANDLER    VectorC0
-#define KINETIS_PIT3_HANDLER    VectorC4
-
 /*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/

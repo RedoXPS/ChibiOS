@@ -77,15 +77,15 @@ PROJECT = ch
 # Imported source files and paths
 CHIBIOS = ../../..
 include $(CHIBIOS)/os/hal/hal.mk
-include $(CHIBIOS)/os/hal/boards/PJRC_TEENSY_3/board.mk
+include $(CHIBIOS)/os/hal/boards/PJRC_TEENSY_3_1/board.mk
 include $(CHIBIOS)/os/hal/ports/KINETIS/K20x/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_k20x5.mk
+include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_k20x7.mk
 include $(CHIBIOS)/test/rt/test.mk
 
 # Define linker script file here
-LDSCRIPT= $(PORTLD)/MK20DX128.ld
+LDSCRIPT= $(PORTLD)/MK20DX256.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
