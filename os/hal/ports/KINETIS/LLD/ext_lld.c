@@ -139,8 +139,8 @@ static inline void irq_handler(PORT_TypeDef * const port, const unsigned port_wi
 
   /* Clear all pending interrupts on this port. */
   port->ISFR = 0xFFFFFFFF;
-
-  for (unsigned pin = 0; pin < port_width; pin++) {
+  uint32_t pin;
+  for (pin = 0; pin < port_width; pin++) {
     if (isfr & (1 << pin)) {
       expchannel_t channel = channel_map[pin];
       EXTD1.config->channels[channel].cb(&EXTD1, channel);
@@ -251,7 +251,8 @@ void ext_lld_start(EXTDriver *extp) {
     ext_lld_exti_irq_enable();
 
   /* Configuration of automatic channels.*/
-  for (expchannel_t channel = 0; channel < EXT_MAX_CHANNELS; channel++) {
+  expchannel_t channel;
+  for (channel = 0; channel < EXT_MAX_CHANNELS; channel++) {
 
     uint32_t mode = extp->config->channels[channel].mode;
     PORT_TypeDef *port = extp->config->channels[channel].port;
@@ -351,7 +352,8 @@ void ext_lld_channel_disable(EXTDriver *extp, expchannel_t channel) {
 
   PORT_TypeDef *port = extp->config->channels[channel].port;
   uint32_t pin = extp->config->channels[channel].pin;
-  port->PCR[pin] |= PORTx_PCRn_IRQC(PCR_IRQC_DISABLED);
+  /* Clear all the IRQC bits */
+  port->PCR[pin] = port->PCR[pin] & (~PORTx_PCRn_IRQC_MASK);
 }
 
 #endif /* HAL_USE_EXT */
