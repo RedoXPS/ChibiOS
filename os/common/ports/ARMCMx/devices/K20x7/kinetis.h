@@ -66,6 +66,8 @@
 /* I2C attributes.*/
 #define KINETIS_HAS_I2C0            TRUE
 #define KINETIS_I2C0_IRQ_VECTOR     VectorA0
+#define KINETIS_HAS_I2C1            TRUE
+#define KINETIS_I2C1_IRQ_VECTOR     VectorA4
 
 /* Serial attributes */
 #define KINETIS_HAS_SERIAL0         TRUE
@@ -76,18 +78,22 @@
 #define KINETIS_FTM1_CHANNELS 2
 #define KINETIS_FTM2_CHANNELS 2
 
-#define KINETIS_FTM0_IRQ_VECTOR  Vector138
-#define KINETIS_FTM1_IRQ_VECTOR  Vector13C
-#define KINETIS_FTM2_IRQ_VECTOR  Vector140
+#define KINETIS_FTM0_IRQ_VECTOR     Vector138
+#define KINETIS_FTM1_IRQ_VECTOR     Vector13C
+#define KINETIS_FTM2_IRQ_VECTOR     Vector140
 
 /* GPT */
-#define KINETIS_PIT0_IRQ_VECTOR  VectorB8
-#define KINETIS_PIT1_IRQ_VECTOR  VectorBC
-#define KINETIS_PIT2_IRQ_VECTOR  VectorC0
-#define KINETIS_PIT3_IRQ_VECTOR  VectorC4
+#define KINETIS_HAS_PIT0            TRUE
+#define KINETIS_PIT0_IRQ_VECTOR     Vector150
+#define KINETIS_HAS_PIT1            TRUE
+#define KINETIS_PIT1_IRQ_VECTOR     Vector154
+#define KINETIS_HAS_PIT2            TRUE
+#define KINETIS_PIT2_IRQ_VECTOR     Vector158
+#define KINETIS_HAS_PIT3            TRUE
+#define KINETIS_PIT3_IRQ_VECTOR     Vector15C
 
 /* DMA */
-#define KINETIS_DMA0_IRQ_VECTOR  Vector40
+#define KINETIS_DMA0_IRQ_VECTOR     Vector40
 /** @} */
 
 #endif /* _KINETIS_REGISTRY_H_ */
