@@ -163,7 +163,7 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
     i2c->S = i2cS | I2Cx_S_IICIF;
     if (i2cS & I2Cx_S_ARBL)
     {
-      i2cp->errors |= I2C_ARBITRATION_LOST;
+      i2cp->errors |= I2C_SLAVE_ARBITRATION_LOST;
       i2cp->state = I2C_SLAVE_READY;
       i2c->S = i2cS | I2Cx_S_ARBL;
     }
@@ -327,13 +327,13 @@ void i2c_slave_lld_start(I2CSlaveDriver *i2cp) {
 #if KINETIS_I2C_SLAVE_USE_I2C0
     if (&I2CSD1 == i2cp) {
       SIM->SCGC4 |= SIM_SCGC4_I2C0;
-      nvicEnableVector(I2C0_IRQn, KINETIS_I2C_I2C0_PRIORITY);
+      nvicEnableVector(I2C0_IRQn, KINETIS_I2C_SLAVE_I2C0_PRIORITY);
     }
 #endif /* KINETIS_I2C_SLAVE_USE_I2C0 */
 #if KINETIS_I2C_SLAVE_USE_I2C1
     if (&I2CSD2 == i2cp) {
       SIM->SCGC4 |= SIM_SCGC4_I2C1;
-      nvicEnableVector(I2C0_IRQn, KINETIS_I2C_I2C1_PRIORITY);
+      nvicEnableVector(I2C0_IRQn, KINETIS_I2C_SLAVE_I2C1_PRIORITY);
     }
 #endif /* KINETIS_I2C_SLAVE_USE_I2C1 */
   }
