@@ -14,8 +14,9 @@
     limitations under the License.
 */
 #include "hal.h"
+#include "chprintf.h"
 
-static bool i2cOk = false;
+static uint8_t i2cOk = false;
 
 static THD_WORKING_AREA(waThread1, 64);
 static THD_FUNCTION(Thread1, arg) {
@@ -27,7 +28,7 @@ static THD_FUNCTION(Thread1, arg) {
       palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
       i2cOk=0;
     }
-    chThdSleepMilliseconds(100);
+    chThdSleepMilliseconds(10);
   }
 
   return 0;
@@ -37,12 +38,17 @@ static I2CConfig i2ccfg = {
   400000
 };
 
+static SerialConfig sercfg = {
+  115200
+};
+
 /*
  * Application entry point.
  */
 int main(void) {
 
   uint8_t tx[8], rx[8];
+  uint16_t i=0;
 
   /*
    * System initializations.
@@ -54,6 +60,7 @@ int main(void) {
   halInit();
   chSysInit();
 
+  sdStart(&SD1,&sercfg);
   palSetPadMode(IOPORT2, 0, PAL_MODE_ALTERNATIVE_2);
   palSetPadMode(IOPORT2, 1, PAL_MODE_ALTERNATIVE_2);
   i2cStart(&I2CD1, &i2ccfg);
@@ -61,10 +68,15 @@ int main(void) {
   chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
   while (1) {
-    tx[0] = 0x10;
-    tx[1] = 0x02;
+    tx[0] = 0x10; tx[1] = 0x02;
+    rx[0] = 0x00;
     i2cMasterTransmitTimeout(&I2CD1, 0x21, tx, 2, rx, 2, TIME_INFINITE);
-    i2cOk = (rx[0] == tx[1]) ? true : false;
-    chThdSleepMilliseconds(500);
+    i2cOk = (rx[0] == tx[1]) ?  0x10: 0x00;
+    rx[0] = 0x00;
+    i2cMasterTransmitTimeout(&I2CD1, 0x22, tx, 2, rx, 2, TIME_INFINITE);
+    i2cOk |= (rx[0] == tx[1]) ? 0x01 : 0x00;
+    chprintf((BaseSequentialStream *)&SD1,"%4X - %02X\r\n",i++,i2cOk);
+    chThdSleepMilliseconds(50);
+
   }
 }
