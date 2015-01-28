@@ -129,17 +129,6 @@ void slave_config_frequency(I2CSlaveDriver *i2cp) {
  * @param[in] i2cp         pointer to an I2CDriver
  */
 
-#define restart_vtimer_i2cstop() do { \
-    chSysLockFromISR(); \
-    chVTResetI(&(i2cp->vtimer)); \
-    chVTSetI(&(i2cp->vtimer), 500, vtimer_cb, i2cp); \
-    chSysUnlockFromISR(); \
-  } while(0)
-#define stop_vtimer_i2cstop() do { \
-    chSysLockFromISR(); \
-    chVTResetI(&(i2cp->vtimer)); \
-    chSysUnlockFromISR(); \
-  } while(0)
 
 #if 0
 #define cb(x) do { \
@@ -150,27 +139,11 @@ void slave_config_frequency(I2CSlaveDriver *i2cp) {
 #else
   #define cb(x) x
 #endif
-//~ void vtimer_cb(void *p) {
-  //~ I2CSlaveDriver *i2cp = p;
-  //~ if(!(i2cp->i2c->S & I2Cx_S_BUSY))
-  //~ {
-    //~ chprintf((BaseSequentialStream *)&SD1,"]");
-    //~ i2cp->state = I2C_SLAVE_READY;
-    //~ stop_vtimer_i2cstop();
-    //~ // Callback I2C End RX
-    //~ if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
-      //~ cb(i2cp->config->rxend_cb(i2cp));
-  //~ }
-  //~ else
-  //~ {
-    //~ restart_vtimer_i2cstop();
-  //~ }
-//~ }
+
 
 static void serve_interrupt(I2CSlaveDriver *i2cp) {
 
   I2C_TypeDef *i2c = i2cp->i2c;
-  //~ intstate_t state = i2cp->intstate;
 
   uint8_t i2cS = i2c->S;
   uint8_t i2cSMB = i2c->SMB;
@@ -182,7 +155,6 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
     i2cSMB &= ~I2Cx_SMB_SHTF2IE;
     i2c->SMB = i2cSMB | I2Cx_SMB_SHTF2 | I2Cx_SMB_SLTF;
     i2c->S = i2cS | I2Cx_S_IICIF;
-    //~ cb(chprintf((BaseSequentialStream *)&SD1,"]"));
     i2cp->state = I2C_SLAVE_READY;
       if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
     cb(i2cp->config->rxend_cb(i2cp));
@@ -190,7 +162,6 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
   else if (!(i2cSMB & I2Cx_SMB_FACK) && (i2cS & I2Cx_S_TCF))
   {
     i2c->S = i2cS | I2Cx_S_IICIF;
-    //~ cb(chprintf((BaseSequentialStream *)&SD1,"%X ",i2cS));
     if (i2cS & I2Cx_S_ARBL)
     {
       i2cp->errors |= I2C_ARBITRATION_LOST;
@@ -283,14 +254,9 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
           (void)i2c->D;	// Dummy read
         }
       }
-      //~ else
-      //~ {
-         //~ i2c->C1 = i2cC1|I2Cx_C1_TXAK;  // RxMode, Nack
-        //~ (void)i2c->D;	// Dummy read
-      //~ }
     }
   }
-i2c->S = i2cS | I2Cx_S_IICIF;
+  i2c->S = i2cS | I2Cx_S_IICIF;
   //~ if (i2cp->errors != I2C_NO_ERROR)
     //~ _i2c_slave_wakeup_error_isr(i2cp);
 

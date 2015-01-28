@@ -34,7 +34,7 @@ static THD_FUNCTION(Thread1, arg) {
 }
 
 static I2CConfig i2ccfg = {
-  40000
+  400000
 };
 
 /*
@@ -63,8 +63,8 @@ int main(void) {
   while (1) {
     tx[0] = 0x10;
     tx[1] = 0x02;
-    i2cMasterTransmitTimeout(&I2CD1, 0x21, tx, 2, rx, 6, TIME_INFINITE);
-    i2cOk = (rx[0] == 0x10) ? true : false;
+    i2cMasterTransmitTimeout(&I2CD1, 0x21, tx, 2, rx, 2, TIME_INFINITE);
+    i2cOk = (rx[0] == tx[1]) ? true : false;
     chThdSleepMilliseconds(2000);
   }
 }

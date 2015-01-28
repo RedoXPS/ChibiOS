@@ -18,24 +18,6 @@
 
 #include "i2c_slave.h"
 
-//~ static bool i2cOk = false;
-
-//~ static THD_WORKING_AREA(waThread1, 64);
-//~ static THD_FUNCTION(Thread1, arg) {
-
-  //~ (void)arg;
-  //~ chRegSetThreadName("Blinker");
-  //~ while (TRUE) {
-    //~ if (i2cOk) {
-      //~ palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
-      //~ i2cOk=0;
-    //~ }
-    //~ chThdSleepMilliseconds(500);
-  //~ }
-
-  //~ return 0;
-//~ }
-
 void start_cb(I2CSlaveDriver *i2cp,uint8_t c)
 {
   (void)i2cp;
@@ -53,17 +35,17 @@ void endrx_cb(I2CSlaveDriver *i2cp)
   }
   i2cp->txbuf[2]++;
   i2cp->txbytes=i2cp->rxidx;
-  chprintf((BaseSequentialStream *)&SD1,"r");//(%d/%d) %x %x %x] ",i2cp->rxidx,i2cp->rxsize,i2cp->rxbuf[0],i2cp->rxbuf[1],i2cp->rxbuf[2]);
+  chprintf((BaseSequentialStream *)&SD1,"r%X",i2cp->txbuf[2]);
 }
 
 void endtx_cb(I2CSlaveDriver *i2cp)
 {
   (void)i2cp;
-  chprintf((BaseSequentialStream *)&SD1,"t");//(%d/%d) %x %x %x] ",i2cp->txidx,i2cp->txsize,i2cp->txbuf[0],i2cp->txbuf[1],i2cp->txbuf[2]);
+  chprintf((BaseSequentialStream *)&SD1,"t");
 }
 
 static I2CSlaveConfig i2cscfg = {
-  50000,
+  400000,
   0x21,
   start_cb,   // Start
   //~ NULL,   // Rx Byte
@@ -77,17 +59,10 @@ static SerialConfig sercfg = {
   115200
 };
 
-//~ static I2CConfig i2ccfg = {
-  //~ 40000
-//~ };
 /*
  * Application entry point.
  */
 int main(void) {
-
-  uint8_t tx[8], rx[8];
-  uint8_t i=0;
-
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -102,23 +77,12 @@ int main(void) {
   i2cSlaveInit();
   i2cSlaveObjectInit(&I2CSD1);
 
-  //~ palSetPadMode(IOPORT2, 0, PAL_MODE_ALTERNATIVE_2);
-  //~ palSetPadMode(IOPORT2, 1, PAL_MODE_ALTERNATIVE_2);
-  //~ i2cStart(&I2CD2, &i2ccfg);
-
   palSetPadMode(IOPORT2, 0, PAL_MODE_ALTERNATIVE_2);
   palSetPadMode(IOPORT2, 1, PAL_MODE_ALTERNATIVE_2);
   i2cSlaveStart(&I2CSD1, &i2cscfg);
 
-  //~ chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
-
   while (1) {
-    //~ tx[0] = 0x10;
-    //~ tx[1] = 0x02;
-    //~ i2cMasterTransmitTimeout(&I2CD2, 0x21, tx, 2, rx, 6, TIME_INFINITE);
-    //~ i2cOk = (rx[0] == 0x10) ? true : false;
     chThdSleepMilliseconds(1000);
     palTogglePad(GPIOC, PORTC_TEENSY_PIN13);
-    //~ chprintf((BaseSequentialStream *)&SD1,"Hello World %d\r\n",i++);
   }
 }
