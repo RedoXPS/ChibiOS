@@ -21,8 +21,6 @@
  * @addtogroup I2C
  * @{
  */
- #include "ch.h"
-#include "chprintf.h"
 #include "hal.h"
 
 #if HAL_USE_I2C_SLAVE || defined(__DOXYGEN__)
@@ -149,8 +147,9 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
   uint8_t i2cSMB = i2c->SMB;
   uint8_t i2cC1 = i2c->C1&(~(I2Cx_C1_TXAK|I2Cx_C1_TX));// Default to Ack, RxMode
   uint8_t c=0;
-
-  if((i2cSMB & (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE)) == (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE))
+  i2cp->errors = I2C_SLAVE_NO_ERROR;
+  if((i2cSMB & (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE)) ==
+                                              (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE))
   {
     i2cSMB &= ~I2Cx_SMB_SHTF2IE;
     i2c->SMB = i2cSMB | I2Cx_SMB_SHTF2 | I2Cx_SMB_SLTF;
@@ -165,28 +164,30 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
     if (i2cS & I2Cx_S_ARBL)
     {
       i2cp->errors |= I2C_ARBITRATION_LOST;
+      i2cp->state = I2C_SLAVE_READY;
       i2c->S = i2cS | I2Cx_S_ARBL;
-      if(!(i2cS & I2Cx_S_IAAS))
-        return;
     }
     if(i2cS & I2Cx_S_IAAS)                                              // Start
     {
       if(i2cp->state == I2C_SLAVE_ACTIVE_RX)                          // ReStart
       {
         i2cSMB &= ~I2Cx_SMB_SHTF2IE;
-        //~ cb(chprintf((BaseSequentialStream *)&SD1,"s"));
         // Callback I2C Stop for RX
         if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
+        {
           cb(i2cp->config->rxend_cb(i2cp));
+        }
       }
-      if(i2cS & I2Cx_S_SRW)       // TxMode
+      if(i2cS & I2Cx_S_SRW)
       {
         i2cC1 |= I2Cx_C1_TX;
         i2c->C1 = i2cC1;
       }
       c = i2c->D; // Read Address
       if (i2cp->config->start_cb != NULL)
+      {
         cb(i2cp->config->start_cb(i2cp,c));
+      }
       if(i2cS & I2Cx_S_SRW) 		                                 // Start TX-ing
       {
         i2cp->state = I2C_SLAVE_ACTIVE_TX;
@@ -212,12 +213,13 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
         if(!(i2cS & I2Cx_S_RXAK)) {		             // Master Ack-ed, Keep TX-ing
           i2cp->state = I2C_SLAVE_ACTIVE_TX;
           c = 0xFF;
-          if(i2cp->txbuf != NULL && i2cp->txidx<i2cp->txbytes)    // TxBuffer not empty, Keep TX-ing
+          if(i2cp->txbuf != NULL
+             && i2cp->txidx<i2cp->txbytes)    // TxBuffer not empty, Keep TX-ing
           {
             c = i2cp->txbuf[i2cp->txidx++];
           }
-          i2c->D = c;  // Send next byte
-          i2c->C1 = i2cC1|(I2Cx_C1_TX);                   // TxMode
+          i2c->D = c;                       // Send next byte
+          i2c->C1 = i2cC1|(I2Cx_C1_TX);     // TxMode
         }
         else
         {											              // Stop TX-ing (Master just NAck-ed)
@@ -225,28 +227,30 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
           i2c->C1 = i2cC1;                  // RxMode
           (void)i2c->D;	// Dummy read
           // Callback End TX
-          if (i2cp->txbytes && i2cp->txidx==i2cp->txbytes && i2cp->config->txend_cb != NULL)
+          if (i2cp->txbytes && i2cp->txidx==i2cp->txbytes
+              && i2cp->config->txend_cb != NULL)
+          {
             cb(i2cp->config->txend_cb(i2cp));
-          //~ i2c->C1 = i2cC1&(~I2Cx_C1_TX);                  // RxMode
+          }
         }
       }
-      else
-      //~ else if(i2cp->state == I2C_SLAVE_ACTIVE_RX)	    										                                   // RX-ing
+      else									                                           // RX-ing
       {
-        if(i2cp->rxbuf != NULL && i2cp->rxidx < i2cp->rxbytes)          // Buffer not full, Keep RX-ing
+        if(i2cp->rxbuf != NULL
+           && i2cp->rxidx < i2cp->rxbytes)       // Buffer not full, Keep RX-ing
         {
-          //~ cb(chprintf((BaseSequentialStream *)&SD1,"%X",i2cS));
           i2cp->state = I2C_SLAVE_ACTIVE_RX;
-          //~ i2cp->rxbuf[i2cp->rxidx++] = i2c->D;	// Read =)
-          if(i2cp->rxidx+1 < i2cp->rxbytes)       // Keep RX-ing after this byte
-            i2c->C1 = i2cC1;                 // RxMode
-          else
-            i2c->C1 = i2cC1|I2Cx_C1_TXAK;  // RxMode, Nack
+          if(i2cp->rxidx+1 >= i2cp->rxbytes)      // Stop RX-ing after this byte
+          {
+            i2cC1 |= I2Cx_C1_TXAK;          // RxMode, Nack
+          }
+          i2c->C1 = i2cC1;
           i2cp->rxbuf[i2cp->rxidx++] = i2c->D;	// Read =)
           // Callback Byte RX-ed
         }
         else                       // Buffer full, Stop RX-ing after this byte
         {
+          i2cp->state = I2C_SLAVE_READY;
           i2c->C1 = i2cC1|I2Cx_C1_TXAK;  // RxMode, Nack
           (void)i2c->D;	// Dummy read
         }
@@ -254,11 +258,10 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
     }
   }
   i2c->S = i2cS | I2Cx_S_IICIF;
-  //~ if (i2cp->errors != I2C_NO_ERROR)
-    //~ _i2c_slave_wakeup_error_isr(i2cp);
-
-  //~ if (i2cp->intstate == STATE_STOP)
-    //~ _i2c_slave_wakeup_isr(i2cp);
+  if (i2cp->errors != I2C_SLAVE_NO_ERROR)
+    _i2c_slave_wakeup_error_isr(i2cp);
+  else if (i2cp->state == I2C_SLAVE_READY)
+    _i2c_slave_wakeup_isr(i2cp);
 }
 
 /*===========================================================================*/
@@ -338,10 +341,7 @@ void i2c_slave_lld_start(I2CSlaveDriver *i2cp) {
   slave_config_frequency(i2cp);
 
   i2cp->i2c->A1 = I2Cx_A1_AD(i2cp->config->address);
-  i2cp->i2c->A2 = 0x00;
   i2cp->i2c->C1 = I2Cx_C1_IICEN | I2Cx_C1_IICIE;
-  //~ i2cp->i2c->C2 = I2Cx_C2_SBRC;
-  //~ i2cp->i2c->C2 = I2Cx_C2_HDRS;
   i2cp->i2c->SMB = I2Cx_SMB_TCKSEL;
 
   i2cp->txbytes=0;
@@ -352,8 +352,6 @@ void i2c_slave_lld_start(I2CSlaveDriver *i2cp) {
   i2cp->rxsize=4;
   i2cp->rxbuf = i2c_rxbuf;
   i2cp->rxidx=0;
-
-  i2cp->intstate = STATE_STOP;
 }
 
 /**

@@ -97,8 +97,8 @@ CSRC = $(PORTSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
        main.c \
-       i2c_slave.c \
-       i2c_slave_lld.c \
+       i2c_slave/i2c_slave.c \
+       i2c_slave/i2c_slave_lld.c \
        ${CHIBIOS}/os/various/chprintf.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -185,7 +185,7 @@ UDEFS =
 UADEFS =
 
 # List all user directories here
-UINCDIR =
+UINCDIR = i2c_slave/
 
 # List the user directory to look for the libraries here
 ULIBDIR =

@@ -43,15 +43,17 @@
  * @name    I2C bus error conditions
  * @{
  */
-#define I2C_SLAVE_NO_ERROR           0x00    /**< @brief No error.            */
-#define I2C_SLAVE_BUS_ERROR          0x01    /**< @brief Bus Error.           */
-#define I2C_SLAVE_ARBITRATION_LOST   0x02    /**< @brief Arbitration Lost.    */
-#define I2C_SLAVE_ACK_FAILURE        0x04    /**< @brief Acknowledge Failure. */
-#define I2C_SLAVE_OVERRUN            0x08    /**< @brief Overrun/Underrun.    */
-#define I2C_SLAVE_PEC_ERROR          0x10    /**< @brief PEC Error in
-                                                reception.                    */
-#define I2C_SLAVE_TIMEOUT            0x20    /**< @brief Hardware timeout.    */
-#define I2C_SLAVE_SMB_ALERT          0x40    /**< @brief SMBus Alert.         */
+typedef enum {
+  I2C_SLAVE_NO_ERROR         = 0x00,       /**< @brief No error               */
+  //~ I2C_SLAVE_BUS_ERROR        = 0x01,       /**< @brief Bus Error              */
+  I2C_SLAVE_ARBITRATION_LOST = 0x02,       /**< @brief Arbitration Lost       */
+  //~ I2C_SLAVE_ACK_FAILURE      = 0x04,       /**< @brief Acknowledge Failure.   */
+  //~ I2C_SLAVE_OVERRUN          = 0x08,       /**< @brief Overrun/Underrun.      */
+  //~ I2C_SLAVE_PEC_ERROR        = 0x10,       /**< @brief PEC Error in reception */
+  I2C_SLAVE_TIMEOUT          = 0x20,       /**< @brief Hardware timeout.      */
+  //~ I2C_SLAVE_SMB_ALERT        = 0x40,       /**< @brief SMBus Alert.           */
+} i2c_slave_error_flags_t;
+
 /** @} */
 
 /*===========================================================================*/
@@ -70,7 +72,8 @@
 /*===========================================================================*/
 
 #if I2C_USE_MUTUAL_EXCLUSION && !CH_CFG_USE_MUTEXES && !CH_CFG_USE_SEMAPHORES
-#error "I2C_USE_MUTUAL_EXCLUSION requires CH_CFG_USE_MUTEXES and/or CH_CFG_USE_SEMAPHORES"
+#error "I2C_USE_MUTUAL_EXCLUSION requires "\
+       "CH_CFG_USE_MUTEXES and/or CH_CFG_USE_SEMAPHORES"
 #endif
 
 /*===========================================================================*/
@@ -132,7 +135,7 @@ extern "C" {
   void i2cSlaveObjectInit(I2CSlaveDriver *i2cp);
   void i2cSlaveStart(I2CSlaveDriver *i2cp, const I2CSlaveConfig *config);
   void i2cSlaveStop(I2CSlaveDriver *i2cp);
-  i2c_slave_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp);
+  i2c_slave_error_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp);
 
 #if I2C_USE_MUTUAL_EXCLUSION
   void i2cSlaveAcquireBus(I2CSlaveDriver *i2cp);

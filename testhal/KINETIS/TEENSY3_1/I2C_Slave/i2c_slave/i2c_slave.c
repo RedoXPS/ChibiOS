@@ -137,7 +137,7 @@ void i2cSlaveStop(I2CSlaveDriver *i2cp) {
  *
  * @api
  */
-i2c_slave_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp) {
+i2c_slave_error_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp) {
 
   osalDbgCheck(i2cp != NULL);
 

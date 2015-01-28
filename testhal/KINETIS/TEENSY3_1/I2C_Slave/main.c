@@ -21,6 +21,7 @@
 void start_cb(I2CSlaveDriver *i2cp,uint8_t c)
 {
   (void)i2cp;
+  (void)c;
   //~ chprintf((BaseSequentialStream *)&SD1,"\r\n[(%X) ",c);
 }
 

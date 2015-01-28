@@ -71,7 +71,7 @@ typedef uint16_t i2c_slave_addr_t;
 /**
  * @brief   Type of I2C Driver condition flags.
  */
-typedef uint32_t i2c_slave_flags_t;
+//~ typedef uint32_t i2c_slave_flags_t;
 
 typedef struct I2CSlaveDriver I2CSlaveDriver;
 
@@ -111,7 +111,7 @@ struct I2CSlaveDriver {
   /**
    * @brief   Error flags.
    */
-  i2c_slave_flags_t                errors;
+  i2c_slave_error_flags_t         errors;
 #if I2C_USE_MUTUAL_EXCLUSION || defined(__DOXYGEN__)
 #if CH_CFG_USE_MUTEXES || defined(__DOXYGEN__)
   /**
@@ -146,14 +146,8 @@ struct I2CSlaveDriver {
   size_t                    rxbytes;
   /* @brief Current index in buffer when receiving data. */
   size_t                    rxidx;
-  /* @brief Tracks current ISR state. */
-  intstate_t                intstate;
   /* @brief Low-level register access. */
-
   I2C_TypeDef               *i2c;
-
-  virtual_timer_t           vtimer;
-
 };
 
 /*===========================================================================*/
