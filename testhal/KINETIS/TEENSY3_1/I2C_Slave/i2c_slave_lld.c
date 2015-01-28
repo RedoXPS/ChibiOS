@@ -169,12 +169,12 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
       if(!(i2cS & I2Cx_S_IAAS))
         return;
     }
-    if(i2cS & I2Cx_S_IAAS)
-    {					                                  // Start
+    if(i2cS & I2Cx_S_IAAS)                                              // Start
+    {
       if(i2cp->state == I2C_SLAVE_ACTIVE_RX)                          // ReStart
       {
         i2cSMB &= ~I2Cx_SMB_SHTF2IE;
-        cb(chprintf((BaseSequentialStream *)&SD1,"s"));
+        //~ cb(chprintf((BaseSequentialStream *)&SD1,"s"));
         // Callback I2C Stop for RX
         if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
           cb(i2cp->config->rxend_cb(i2cp));
@@ -187,7 +187,6 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
       c = i2c->D; // Read Address
       if (i2cp->config->start_cb != NULL)
         cb(i2cp->config->start_cb(i2cp,c));
-      //~ i2c->C1 = i2cC1;
       if(i2cS & I2Cx_S_SRW) 		                                 // Start TX-ing
       {
         i2cp->state = I2C_SLAVE_ACTIVE_TX;
@@ -208,9 +207,7 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
       i2c->C1 = i2cC1;
     }
     else
-    //~ else
     {
-      //~ if(i2cC1 & I2Cx_C1_TX) {			                   // TX-ing
       if(i2cp->state == I2C_SLAVE_ACTIVE_TX) {			                   // TX-ing
         if(!(i2cS & I2Cx_S_RXAK)) {		             // Master Ack-ed, Keep TX-ing
           i2cp->state = I2C_SLAVE_ACTIVE_TX;

@@ -21,7 +21,7 @@
 void start_cb(I2CSlaveDriver *i2cp,uint8_t c)
 {
   (void)i2cp;
-  chprintf((BaseSequentialStream *)&SD1,"\r\n[(%X) ",c);
+  //~ chprintf((BaseSequentialStream *)&SD1,"\r\n[(%X) ",c);
 }
 
 void endrx_cb(I2CSlaveDriver *i2cp)
@@ -35,13 +35,13 @@ void endrx_cb(I2CSlaveDriver *i2cp)
   }
   i2cp->txbuf[2]++;
   i2cp->txbytes=i2cp->rxidx;
-  chprintf((BaseSequentialStream *)&SD1,"r%X",i2cp->txbuf[2]);
+  //~ chprintf((BaseSequentialStream *)&SD1,"r%X",i2cp->txbuf[2]);
 }
 
 void endtx_cb(I2CSlaveDriver *i2cp)
 {
   (void)i2cp;
-  chprintf((BaseSequentialStream *)&SD1,"t");
+  //~ chprintf((BaseSequentialStream *)&SD1,"t");
 }
 
 static I2CSlaveConfig i2cscfg = {

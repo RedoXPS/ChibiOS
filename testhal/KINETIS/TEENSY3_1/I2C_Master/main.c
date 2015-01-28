@@ -27,7 +27,7 @@ static THD_FUNCTION(Thread1, arg) {
       palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
       i2cOk=0;
     }
-    chThdSleepMilliseconds(500);
+    chThdSleepMilliseconds(100);
   }
 
   return 0;
@@ -65,6 +65,6 @@ int main(void) {
     tx[1] = 0x02;
     i2cMasterTransmitTimeout(&I2CD1, 0x21, tx, 2, rx, 2, TIME_INFINITE);
     i2cOk = (rx[0] == tx[1]) ? true : false;
-    chThdSleepMilliseconds(2000);
+    chThdSleepMilliseconds(500);
   }
 }
