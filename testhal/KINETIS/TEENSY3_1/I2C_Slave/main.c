@@ -53,17 +53,17 @@ void endrx_cb(I2CSlaveDriver *i2cp)
   }
   i2cp->txbuf[2]++;
   i2cp->txbytes=i2cp->rxidx;
-  chprintf((BaseSequentialStream *)&SD1,"Rx(%d/%d) %x %x %x] ",i2cp->rxidx,i2cp->rxsize,i2cp->rxbuf[0],i2cp->rxbuf[1],i2cp->rxbuf[2]);
+  chprintf((BaseSequentialStream *)&SD1,"r");//(%d/%d) %x %x %x] ",i2cp->rxidx,i2cp->rxsize,i2cp->rxbuf[0],i2cp->rxbuf[1],i2cp->rxbuf[2]);
 }
 
 void endtx_cb(I2CSlaveDriver *i2cp)
 {
   (void)i2cp;
-  chprintf((BaseSequentialStream *)&SD1,"Tx(%d/%d) %x %x %x] ",i2cp->txidx,i2cp->txsize,i2cp->txbuf[0],i2cp->txbuf[1],i2cp->txbuf[2]);
+  chprintf((BaseSequentialStream *)&SD1,"t");//(%d/%d) %x %x %x] ",i2cp->txidx,i2cp->txsize,i2cp->txbuf[0],i2cp->txbuf[1],i2cp->txbuf[2]);
 }
 
 static I2CSlaveConfig i2cscfg = {
-  10000,
+  50000,
   0x21,
   start_cb,   // Start
   //~ NULL,   // Rx Byte
