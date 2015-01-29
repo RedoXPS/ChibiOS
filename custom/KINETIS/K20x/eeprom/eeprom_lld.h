@@ -112,7 +112,7 @@ typedef enum {
   EEPROM_ERR_COLLISION = 2,               /**< Read collision occured         */
   EEPROM_ERR_ACCESS    = 3,               /**< Illegal access                 */
   EEPROM_ERR_VIOLATION = 4                /**< Write to a protected area      */
-} eeprom_error_t;
+} eeprom_errors_t;
 
 /**
  * @brief   Type of a structure representing an EEPROM driver.

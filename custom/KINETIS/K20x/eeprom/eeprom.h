@@ -34,17 +34,6 @@
 /* Driver constants.                                                         */
 /*===========================================================================*/
 
-/* TODO: To be reviewed, too KINETIS-centric.*/
-/**
- * @name    EEPROM error conditions
- * @{
- */
-typedef enum {
-  EEPROM_NO_ERROR         = 0x00,          /**< @brief No error               */
-} eeprom_errors_t;
-
-/** @} */
-
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
 /*===========================================================================*/
