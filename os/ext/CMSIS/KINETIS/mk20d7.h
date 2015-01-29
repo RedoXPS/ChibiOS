@@ -2175,7 +2175,7 @@ typedef struct {
 /****************************************************************/
 /***********  Bits definition for I2Cx_A1 register  *************/
 #define I2Cx_A1_AD_MASK               ((uint8_t)0xFE)    /*!< Address [7:1] */
-#define I2Cx_A1_AD_SHIT              1
+#define I2Cx_A1_AD_SHIFT              1
 #define I2Cx_A1_AD(x)                 ((uint8_t)(((uint8_t)(x) << I2Cx_A1_AD_SHIFT) & I2Cx_A1_AD_MASK))
 
 /***********  Bits definition for I2Cx_F register  **************/
