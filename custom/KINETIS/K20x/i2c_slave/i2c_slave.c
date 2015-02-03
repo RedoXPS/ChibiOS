@@ -140,6 +140,22 @@ i2c_slave_error_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp) {
   return i2c_slave_lld_get_errors(i2cp);
 }
 
+void i2cSlaveSetRxBuffer(I2CSlaveDriver *i2cp, uint8_t *buf, size_t len)
+{
+  osalDbgCheck(i2cp != NULL);
+  osalSysLockFromISR();
+  i2c_slave_lld_set_rxbuf(i2cp,buf,len);
+  osalSysUnlockFromISR();
+}
+
+void i2cSlaveSetTxBuffer(I2CSlaveDriver *i2cp, uint8_t *buf, size_t len)
+{
+  osalDbgCheck(i2cp != NULL);
+  osalSysLockFromISR();
+  i2c_slave_lld_set_txbuf(i2cp,buf,len);
+  osalSysUnlockFromISR();
+}
+
 #if I2C_USE_MUTUAL_EXCLUSION || defined(__DOXYGEN__)
 /**
  * @brief   Gains exclusive access to the I2C bus.

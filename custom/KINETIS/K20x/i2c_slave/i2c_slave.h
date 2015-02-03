@@ -132,6 +132,8 @@ extern "C" {
   void i2cSlaveStart(I2CSlaveDriver *i2cp, const I2CSlaveConfig *config);
   void i2cSlaveStop(I2CSlaveDriver *i2cp);
   i2c_slave_error_flags_t i2cSlaveGetErrors(I2CSlaveDriver *i2cp);
+  void i2cSlaveSetRxBuffer(I2CSlaveDriver *i2cp, uint8_t *buf, size_t len);
+  void i2cSlaveSetTxBuffer(I2CSlaveDriver *i2cp, uint8_t *buf, size_t len);
 
 #if I2C_USE_MUTUAL_EXCLUSION
   void i2cSlaveAcquireBus(I2CSlaveDriver *i2cp);

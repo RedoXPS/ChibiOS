@@ -27,8 +27,6 @@
 
 #include "i2c_slave.h"
 
-static uint8_t i2c_txbuf[4] = {0x00,0x00,0x00,0x00};
-static uint8_t i2c_rxbuf[4] = {0x00,0x00,0x00,0x00};
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
@@ -345,12 +343,12 @@ void i2c_slave_lld_start(I2CSlaveDriver *i2cp) {
   i2cp->i2c->SMB = I2Cx_SMB_TCKSEL;
 
   i2cp->txbytes=0;
-  i2cp->txsize=4;
-  i2cp->txbuf = i2c_txbuf;
+  i2cp->txsize=0;
+  i2cp->txbuf = NULL;
   i2cp->txidx=0;
-  i2cp->rxbytes=2;
-  i2cp->rxsize=4;
-  i2cp->rxbuf = i2c_rxbuf;
+  i2cp->rxbytes=0;
+  i2cp->rxsize=0;
+  i2cp->rxbuf = NULL;
   i2cp->rxidx=0;
 }
 

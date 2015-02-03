@@ -171,6 +171,20 @@ struct I2CSlaveDriver {
  */
 #define i2c_slave_lld_get_errors(i2cp) ((i2cp)->errors)
 
+// TODO: Fix rxbytes later with an accessor function
+#define i2c_slave_lld_set_rxbuf(i2cp,b,n) do { \
+  (i2cp)->rxbuf = (b); \
+  (i2cp)->rxsize = (n); \
+  (i2cp)->rxbytes = (n); \
+  } while(0)
+
+// TODO: Fix txbytes later with an accessor function
+#define i2c_slave_lld_set_txbuf(i2cp,b,n) do { \
+  (i2cp)->txbuf = (b); \
+  (i2cp)->txsize = (n); \
+  } while(0)
+
+
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
