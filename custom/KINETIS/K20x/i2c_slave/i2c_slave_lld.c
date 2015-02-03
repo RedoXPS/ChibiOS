@@ -156,7 +156,7 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
     i2c->S = i2cS | I2Cx_S_IICIF;
     i2cp->state = I2C_SLAVE_READY;
       if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
-    cb(i2cp->config->rxend_cb(i2cp));
+    cb(i2cp->config->rxend_cb(i2cp,i2cp->rxbuf,i2cp->rxidx));
   }
   else if (!(i2cSMB & I2Cx_SMB_FACK) && (i2cS & I2Cx_S_TCF))
   {
@@ -175,7 +175,7 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
         // Callback I2C Stop for RX
         if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
         {
-          cb(i2cp->config->rxend_cb(i2cp));
+          cb(i2cp->config->rxend_cb(i2cp,i2cp->rxbuf,i2cp->rxidx));
         }
       }
       if(i2cS & I2Cx_S_SRW)
@@ -230,7 +230,7 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
           if (i2cp->txbytes && i2cp->txidx==i2cp->txbytes
               && i2cp->config->txend_cb != NULL)
           {
-            cb(i2cp->config->txend_cb(i2cp));
+            cb(i2cp->config->txend_cb(i2cp,i2cp->txbuf,i2cp->txidx));
           }
         }
       }

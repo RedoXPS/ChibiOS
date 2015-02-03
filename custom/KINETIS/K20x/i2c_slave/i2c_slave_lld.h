@@ -81,14 +81,9 @@
  */
 typedef uint16_t i2c_slave_addr_t;
 
-/**
- * @brief   Type of I2C Driver condition flags.
- */
-//~ typedef uint32_t i2c_slave_flags_t;
-
 typedef struct I2CSlaveDriver I2CSlaveDriver;
 
-typedef void (*i2c_simple_cb_t)(I2CSlaveDriver *i2cp);
+typedef void (*i2c_buff_cb_t)(I2CSlaveDriver *i2cp, uint8_t *buf, size_t n);
 typedef void (*i2c_byte_cb_t)(I2CSlaveDriver *i2cp, uint8_t c);
 
 /**
@@ -103,9 +98,9 @@ typedef struct {
   i2c_slave_addr_t     address;   /* @brief 7bits Address of the I2C Slave    */
   i2c_byte_cb_t       start_cb;
   //~ i2c_byte_cb_t        rxbyte_cb;
-  i2c_simple_cb_t       rxend_cb;
+  i2c_buff_cb_t       rxend_cb;
   //~ i2c_byte_cb_t        rxbyte_cb;
-  i2c_simple_cb_t       txend_cb;
+  i2c_buff_cb_t       txend_cb;
   //~ i2c_byte_cb_t       error_cb;
 } I2CSlaveConfig;
 
