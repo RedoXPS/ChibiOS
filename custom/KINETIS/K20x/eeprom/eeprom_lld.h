@@ -38,25 +38,25 @@ typedef struct {
   __IO uint8_t  FCNFG;          // 0x01
   __I  uint8_t  FSEC;           // 0x02
   __I  uint8_t  FOPT;           // 0x03
-  __IO uint8_t  FCCOB0;         // 0x04
-  __IO uint8_t  FCCOB1;         // 0x05
-  __IO uint8_t  FCCOB2;         // 0x06
-  __IO uint8_t  FCCOB3;         // 0x07
-  __IO uint8_t  FCCOB4;         // 0x08
-  __IO uint8_t  FCCOB5;         // 0x09
-  __IO uint8_t  FCCOB6;         // 0x0A
-  __IO uint8_t  FCCOB7;         // 0x0B
-  __IO uint8_t  FCCOB8;         // 0x0C
-  __IO uint8_t  FCCOB9;         // 0x0D
-  __IO uint8_t  FCCOBA;         // 0x0E
-  __IO uint8_t  FCCOBB;         // 0x0F
-  __IO uint8_t  FPROT0;         // 0x10
-  __IO uint8_t  FPROT1;         // 0x11
-  __IO uint8_t  FPROT2;         // 0x12
-  __IO uint8_t  FPROT3;         // 0x13
+  __IO uint8_t  FCCOB3;         // 0x04
+  __IO uint8_t  FCCOB2;         // 0x05
+  __IO uint8_t  FCCOB1;         // 0x06
+  __IO uint8_t  FCCOB0;         // 0x07
+  __IO uint8_t  FCCOB7;         // 0x08
+  __IO uint8_t  FCCOB6;         // 0x09
+  __IO uint8_t  FCCOB5;         // 0x0A
+  __IO uint8_t  FCCOB4;         // 0x0B
+  __IO uint8_t  FCCOBB;         // 0x0C
+  __IO uint8_t  FCCOBA;         // 0x0D
+  __IO uint8_t  FCCOB9;         // 0x0E
+  __IO uint8_t  FCCOB8;         // 0x0F
+  __IO uint8_t  FPROT3;         // 0x10
+  __IO uint8_t  FPROT2;         // 0x11
+  __IO uint8_t  FPROT1;         // 0x12
+  __IO uint8_t  FPROT0;         // 0x13
        uint8_t  RESERVED0[2];
   __IO uint8_t  FEPROT;         // 0x16
-  __IO uint8_t  FDPROT;         // 0x16
+  __IO uint8_t  FDPROT;         // 0x17
 } FTFL_Typedef;
 
 #define FTFL                    ((FTFL_Typedef *)  FTFL_BASE)
