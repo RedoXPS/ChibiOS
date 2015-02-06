@@ -166,16 +166,22 @@ void k20x_clock_init(void) {
   /*
    * Now in FBE mode
    */
-  #if KINETIS_SYSCLK_MAX == 48000000
+  #if KINETIS_SYSCLK_FREQUENCY == 48000000
   /* Config PLL input for 2 MHz */
   MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000UL) - 1);
   /* Config PLL for 96 MHz output */
   MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
-  #elif KINETIS_SYSCLK_MAX == 72000000
+  //config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash, USB = 96 / 2
+	SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |	 SIM_CLKDIV1_OUTDIV4(3);
+	SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(1);
+  #elif KINETIS_SYSCLK_FREQUENCY == 72000000
   /* Config PLL input for 2.667 MHz */
   MCG->C5 = MCG_C5_PRDIV0(5);//(KINETIS_XTAL_FREQUENCY / 2667000UL) - 1);
-  /* Config PLL for 96 MHz output */
+  /* Config PLL for 72 MHz output */
   MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(3);
+  	// config divisors: 72 MHz core, 36 MHz bus, 24 MHz flash, USB = 72 * 2 / 3
+	SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) |	 SIM_CLKDIV1_OUTDIV4(2);
+	SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(2) | SIM_CLKDIV2_USBFRAC;
   #endif
 
   /* Wait for PLL to start using crystal as its input */
