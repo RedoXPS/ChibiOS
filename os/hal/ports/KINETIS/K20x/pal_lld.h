@@ -275,7 +275,8 @@ typedef struct {
  *
  * @notapi
  */
-#define pal_lld_readpad(port, pad) _pal_lld_readpad(port, pad)
+#define pal_lld_readpad(port, pad)                                          \
+                     ((port->PDIR & ((uint32_t) 1 << pad)) ? PAL_HIGH : PAL_LOW)
 
 /**
  * @brief   Writes a logical state on an output pad.
