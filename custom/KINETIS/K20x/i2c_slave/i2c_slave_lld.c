@@ -72,16 +72,6 @@ void slave_config_frequency(I2CSlaveDriver *i2cp) {
     /* 0x30 - 0x3F */
     640,768,896,1024,1152,1280,1536,1920,1280,1536,1792,2048,2304,2560,3072,3840,
   };
-  uint16_t scl_stop_table[] = {
-    /* 0x00 - 0x0F */
-    11,12,13,14,15,16,18,21,15,17,19,21,23,25,29,35,
-    /* 0x10 - 0x1F */
-    25,29,33,37,41,45,53,65,41,49,57,65,73,81,97,121,
-    /* 0x20 - 0x2F */
-    81,97,113,129,145,161,193,241,161,193,225,257,289,321,384,481,
-    /* 0x30 - 0x3F */
-    321,385,449,513,577,641,769,961,641,769,897,1024,1153,1284,1537,1921
-  };
 
   int length = sizeof(icr_table) / sizeof(icr_table[0]);
   uint16_t divisor;
@@ -111,7 +101,6 @@ void slave_config_frequency(I2CSlaveDriver *i2cp) {
   }
 
   i2cp->i2c->F = index;
-  uint16_t t = (512+25)*scl_stop_table[index];
   i2cp->i2c->SLTH = t>>8;
   i2cp->i2c->SLTL = t&0xFF;
 }
@@ -142,120 +131,118 @@ static void serve_interrupt(I2CSlaveDriver *i2cp) {
   I2C_TypeDef *i2c = i2cp->i2c;
 
   uint8_t i2cS = i2c->S;
-  uint8_t i2cSMB = i2c->SMB;
   uint8_t i2cC1 = i2c->C1&(~(I2Cx_C1_TXAK|I2Cx_C1_TX));// Default to Ack, RxMode
   uint8_t c=0;
   i2cp->errors = I2C_SLAVE_NO_ERROR;
-  if((i2cSMB & (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE)) ==
-                                              (I2Cx_SMB_SHTF2|I2Cx_SMB_SHTF2IE))
+
+  if (i2cS & I2Cx_S_ARBL)
   {
-    i2cSMB &= ~I2Cx_SMB_SHTF2IE;
-    i2c->SMB = i2cSMB | I2Cx_SMB_SHTF2 | I2Cx_SMB_SLTF;
-    i2c->S = i2cS | I2Cx_S_IICIF;
+    i2cp->errors |= I2C_SLAVE_ARBITRATION_LOST;
     i2cp->state = I2C_SLAVE_READY;
-      if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
-    cb(i2cp->config->rxend_cb(i2cp,i2cp->rxbuf,i2cp->rxidx));
+    i2cS |= I2Cx_S_ARBL;
   }
-  else if (!(i2cSMB & I2Cx_SMB_FACK) && (i2cS & I2Cx_S_TCF))
+  else
+  if(i2cS & I2Cx_S_IAAS)                                              // Start
   {
-    i2c->S = i2cS | I2Cx_S_IICIF;
-    if (i2cS & I2Cx_S_ARBL)
+
+    if(i2cp->state != I2C_SLAVE_READY)                          // ReStart
     {
-      i2cp->errors |= I2C_SLAVE_ARBITRATION_LOST;
-      i2cp->state = I2C_SLAVE_READY;
-      i2c->S = i2cS | I2Cx_S_ARBL;
+      // Callback I2C Stop for RX
+      if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
+      {
+        cb(i2cp->config->rxend_cb(i2cp,i2cp->rxbuf,i2cp->rxidx));
+      }
+    } else {
+      //~ sdPut(&SD1,'[');
     }
-    if(i2cS & I2Cx_S_IAAS)                                              // Start
+    if(i2cS & I2Cx_S_SRW)
     {
-      if(i2cp->state == I2C_SLAVE_ACTIVE_RX)                          // ReStart
-      {
-        i2cSMB &= ~I2Cx_SMB_SHTF2IE;
-        // Callback I2C Stop for RX
-        if (i2cp->rxidx && i2cp->config->rxend_cb != NULL)
-        {
-          cb(i2cp->config->rxend_cb(i2cp,i2cp->rxbuf,i2cp->rxidx));
-        }
-      }
-      if(i2cS & I2Cx_S_SRW)
-      {
-        i2cC1 |= I2Cx_C1_TX;
-        i2c->C1 = i2cC1;
-      }
-      c = i2c->D; // Read Address
-      if (i2cp->config->start_cb != NULL)
-      {
-        cb(i2cp->config->start_cb(i2cp,c));
-      }
-      if(i2cS & I2Cx_S_SRW) 		                                 // Start TX-ing
-      {
-        i2cp->state = I2C_SLAVE_ACTIVE_TX;
-        c = 0xFF; // Dummy byte
-        if(i2cp->txbuf != NULL && i2cp->txbytes)
-        {
-          c = i2cp->txbuf[0x00];
-          i2cp->txidx=0x1;
-        }
-        i2c->D = c; // Send first byte
-      }
-      else 	                    										             // Start RX-ing
-      {
-        i2cp->state = I2C_SLAVE_ACTIVE_RX;
-        i2c->SMB = i2cSMB | I2Cx_SMB_SHTF2IE;
-        i2cp->rxidx=0;
-      }
+      i2cC1 |= I2Cx_C1_TX;
       i2c->C1 = i2cC1;
     }
-    else
+    c = i2c->D; // Read Address
+    //~ sdPut(&SD1,'a');
+    if (i2cp->config->start_cb != NULL)
     {
-      if(i2cp->state == I2C_SLAVE_ACTIVE_TX) {			                   // TX-ing
-        if(!(i2cS & I2Cx_S_RXAK)) {		             // Master Ack-ed, Keep TX-ing
-          i2cp->state = I2C_SLAVE_ACTIVE_TX;
-          c = 0xFF;
-          if(i2cp->txbuf != NULL
-             && i2cp->txidx<i2cp->txbytes)    // TxBuffer not empty, Keep TX-ing
-          {
-            c = i2cp->txbuf[i2cp->txidx++];
-          }
-          i2c->D = c;                       // Send next byte
-          i2c->C1 = i2cC1|(I2Cx_C1_TX);     // TxMode
-        }
-        else
-        {											              // Stop TX-ing (Master just NAck-ed)
-          i2cp->state = I2C_SLAVE_READY;
-          i2c->C1 = i2cC1;                  // RxMode
-          (void)i2c->D;	// Dummy read
-          // Callback End TX
-          if (i2cp->txbytes && i2cp->txidx==i2cp->txbytes
-              && i2cp->config->txend_cb != NULL)
-          {
-            cb(i2cp->config->txend_cb(i2cp,i2cp->txbuf,i2cp->txidx));
-          }
-        }
-      }
-      else									                                           // RX-ing
+      cb(i2cp->config->start_cb(i2cp,c));
+    }
+    if(i2cS & I2Cx_S_SRW) 		                                 // Start TX-ing
+    {
+      i2cp->state = I2C_SLAVE_ACTIVE_TX;
+      c = 0xFF; // Dummy byte
+      if(i2cp->txbuf != NULL && i2cp->txbytes)
       {
-        if(i2cp->rxbuf != NULL
-           && i2cp->rxidx < i2cp->rxbytes)       // Buffer not full, Keep RX-ing
+        c = i2cp->txbuf[0x00];
+        i2cp->txidx=0x1;
+      }
+      i2c->D = c; // Send first byte
+      //~ sdPut(&SD1,'f');
+    }
+    else 	                    										             // Start RX-ing
+    {
+      i2cp->state = I2C_SLAVE_ACTIVE_RX;
+      i2cp->rxidx=0;
+      //~ sdPut(&SD1,'l');
+    }
+    i2c->C1 = i2cC1;
+  }
+  else if (i2cp->state != I2C_SLAVE_READY)
+  {
+
+    if(i2cp->state == I2C_SLAVE_ACTIVE_TX) {			                   // TX-ing
+      //~ sdPut(&SD1,'0');
+      if(!(i2cS & I2Cx_S_RXAK)) {		             // Master Ack-ed, Keep TX-ing
+        i2cp->state = I2C_SLAVE_ACTIVE_TX;
+        c = 0xFF;
+        if(i2cp->txbuf != NULL
+           && i2cp->txidx<i2cp->txbytes)    // TxBuffer not empty, Keep TX-ing
         {
-          i2cp->state = I2C_SLAVE_ACTIVE_RX;
-          if(i2cp->rxidx+1 >= i2cp->rxbytes)      // Stop RX-ing after this byte
-          {
-            i2cC1 |= I2Cx_C1_TXAK;          // RxMode, Nack
-          }
-          i2c->C1 = i2cC1;
-          i2cp->rxbuf[i2cp->rxidx++] = i2c->D;	// Read =)
-          // Callback Byte RX-ed
+          c = i2cp->txbuf[i2cp->txidx++];
         }
-        else                       // Buffer full, Stop RX-ing after this byte
+        i2c->D = c;                       // Send next byte
+        i2c->C1 = i2cC1|(I2Cx_C1_TX);     // TxMode
+        //~ sdPut(&SD1,'>');
+      }
+      else
+      {											              // Stop TX-ing (Master just NAck-ed)
+        i2cp->state = I2C_SLAVE_READY;
+        // Callback End TX
+        if (i2cp->txbytes && i2cp->txidx==i2cp->txbytes
+            && i2cp->config->txend_cb != NULL)
         {
-          i2cp->state = I2C_SLAVE_READY;
-          i2c->C1 = i2cC1|I2Cx_C1_TXAK;  // RxMode, Nack
-          (void)i2c->D;	// Dummy read
+          cb(i2cp->config->txend_cb(i2cp,i2cp->txbuf,i2cp->txidx));
         }
+        i2c->C1 = i2cC1;                  // RxMode
+        (void)i2c->D;	// Dummy read
+      }
+    }
+    else if(i2cp->state == I2C_SLAVE_ACTIVE_RX)						           // RX-ing
+    {
+      //~ sdPut(&SD1,'1');
+      if(i2cp->rxbuf != NULL
+         && i2cp->rxidx < i2cp->rxbytes)       // Buffer not full, Keep RX-ing
+      {
+        i2cp->state = I2C_SLAVE_ACTIVE_RX;
+        if(i2cp->rxidx+1 >= i2cp->rxbytes)      // Stop RX-ing after this byte
+        {
+          i2cC1 |= I2Cx_C1_TXAK;          // RxMode, Nack
+        }
+        i2c->C1 = i2cC1;
+        i2cp->rxbuf[i2cp->rxidx++] = i2c->D;	// Read =)
+        //~ sdPut(&SD1,'<');
+        // Callback Byte RX-ed
+      }
+      else                       // Buffer full, Stop RX-ing after this byte
+      {
+        i2cp->state = I2C_SLAVE_READY;
+        i2c->C1 = i2cC1|I2Cx_C1_TXAK;  // RxMode, Nack
+        (void)i2c->D;	// Dummy read
       }
     }
   }
+
   i2c->S = i2cS | I2Cx_S_IICIF;
+
   if (i2cp->errors != I2C_SLAVE_NO_ERROR)
     _i2c_slave_wakeup_error_isr(i2cp);
   else if (i2cp->state == I2C_SLAVE_READY)
@@ -340,7 +327,6 @@ void i2c_slave_lld_start(I2CSlaveDriver *i2cp) {
 
   i2cp->i2c->A1 = I2Cx_A1_AD(i2cp->config->address);
   i2cp->i2c->C1 = I2Cx_C1_IICEN | I2Cx_C1_IICIE;
-  i2cp->i2c->SMB = I2Cx_SMB_TCKSEL;
 
   i2cp->txbytes=0;
   i2cp->txsize=0;
