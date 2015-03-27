@@ -101,8 +101,6 @@ void slave_config_frequency(I2CSlaveDriver *i2cp) {
   }
 
   i2cp->i2c->F = index;
-  i2cp->i2c->SLTH = t>>8;
-  i2cp->i2c->SLTL = t&0xFF;
 }
 
 /**
