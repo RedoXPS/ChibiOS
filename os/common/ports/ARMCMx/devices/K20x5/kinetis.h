@@ -65,29 +65,35 @@
 
 /* Serial attributes */
 #define KINETIS_HAS_SERIAL0         TRUE
-#define KINETIS_SERIAL0_IRQ_VECTOR  Vector80 // 88, 90
+#define KINETIS_SERIAL0_IRQ_VECTOR  Vector80
+#define KINETIS_HAS_SERIAL1         TRUE
+#define KINETIS_SERIAL1_IRQ_VECTOR  Vector88
+#define KINETIS_HAS_SERIAL2         TRUE
+#define KINETIS_SERIAL2_IRQ_VECTOR  Vector90
 
 /* FlexTimer attributes */
 #define KINETIS_FTM0_CHANNELS 8
 #define KINETIS_FTM1_CHANNELS 2
 #define KINETIS_FTM2_CHANNELS 2
 
-#define KINETIS_FTM0_IRQ_VECTOR  Vector138
-#define KINETIS_FTM1_IRQ_VECTOR  Vector13C
-#define KINETIS_FTM2_IRQ_VECTOR  Vector140
+#define KINETIS_FTM0_IRQ_VECTOR     Vector138
+#define KINETIS_FTM1_IRQ_VECTOR     Vector13C
+#define KINETIS_FTM2_IRQ_VECTOR     Vector140
 
 /* GPT */
-#define KINETIS_PIT0_HANDLER    VectorB8
-#define KINETIS_PIT1_HANDLER    VectorBC
-#define KINETIS_PIT2_HANDLER    VectorC0
-#define KINETIS_PIT3_HANDLER    VectorC4
+#define KINETIS_PIT0_HANDLER        VectorB8
+#define KINETIS_PIT1_HANDLER        VectorBC
+#define KINETIS_PIT2_HANDLER        VectorC0
+#define KINETIS_PIT3_HANDLER        VectorC4
 
 /* DMA */
-#define KINETIS_DMA0_IRQ_VECTOR  Vector40
-/** @} */
+#define KINETIS_DMA0_IRQ_VECTOR     Vector40
 
 /* USB attributes */
+#define KINETIS_HAS_USB             TRUE
 #define KINETIS_USB_IRQ_VECTOR      VectorCC
+
+/** @} */
 
 #endif /* _KINETIS_REGISTRY_H_ */
 
