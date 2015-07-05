@@ -15,7 +15,7 @@
 */
 
 /**
- * @file    KINETIS/USBv1/usb_lld.h
+ * @file    KINETIS/K20x/usb_lld.h
  * @brief   KINETIS USB subsystem low level driver header.
  *
  * @addtogroup USB
@@ -26,8 +26,6 @@
 #define _USB_LLD_H_
 
 #if HAL_USE_USB || defined(__DOXYGEN__)
-
-//#include "kinetis_usb.h"
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -351,7 +349,7 @@ struct USBDriver {
  *
  * @notapi
  */
-#define usb_lld_get_frame_number(usbp) (KINETIS_USB->FNR & FNR_FN_MASK)
+#define usb_lld_get_frame_number(usbp) ((USBOTG->FRMNUMH<<8)|USBOTG->FRMNUML)
 
 /**
  * @brief   Returns the exact size of a receive transaction.
@@ -370,14 +368,13 @@ struct USBDriver {
 #define usb_lld_get_transaction_size(usbp, ep)                              \
   ((usbp)->epc[ep]->out_state->rxcnt)
 
-//#if KINETIS_USB_HAS_BCDR || defined(__DOXYGEN__)
 /**
  * @brief   Connects the USB device.
  *
  * @api
  */
 #if !defined(usb_lld_connect_bus)
-#define usb_lld_connect_bus(usbp) ;//(KINETIS_USB->BCDR |= USB_BCDR_DPPU)
+#define usb_lld_connect_bus(usbp) ;
 #endif
 
 /**
@@ -386,9 +383,8 @@ struct USBDriver {
  * @api
  */
 #if !defined(usb_lld_disconnect_bus)
-#define usb_lld_disconnect_bus(usbp) ;//(KINETIS_USB->BCDR &= ~USB_BCDR_DPPU)
+#define usb_lld_disconnect_bus(usbp) ;
 #endif
-//#endif /* KINETIS_USB_HAS_BCDR */
 
 /*===========================================================================*/
 /* External declarations.                                                    */

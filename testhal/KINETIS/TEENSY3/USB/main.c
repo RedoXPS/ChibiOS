@@ -315,37 +315,9 @@ static const SerialUSBConfig serusbcfg = {
   USBD1_INTERRUPT_REQUEST_EP
 };
 
-
-static THD_WORKING_AREA(waSerEcho, 128);
-static msg_t thSerEcho(void *arg)
-{
-  (void)arg;
-  chRegSetThreadName("SerEcho");
-  event_listener_t elSerData;
-  eventflags_t flags;
-  chEvtRegisterMask((event_source_t *)chnGetEventSource(&SD1), &elSerData, EVENT_MASK(1));
-
-  while (!chThdShouldTerminateX())
-  {
-     chEvtWaitOneTimeout(EVENT_MASK(1), MS2ST(10));
-     flags = chEvtGetAndClearFlags(&elSerData);
-     if (flags & CHN_INPUT_AVAILABLE)
-     {
-        msg_t charbuf;
-        do
-        {
-           charbuf = chnGetTimeout(&SD1, TIME_IMMEDIATE);
-           if ( charbuf != Q_TIMEOUT )
-           {
-             chSequentialStreamPut(&SD1, charbuf);
-           }
-        }
-        while (charbuf != Q_TIMEOUT);
-     }
-  }
-
-  return 0;
-}
+SerialConfig s0cfg = {
+  19200
+};
 
 /*
  * Application entry point.
@@ -362,6 +334,8 @@ int main(void) {
   halInit();
   chSysInit();
 
+  sdStart(&SD1, &s0cfg);
+
   /* USB Stuff */
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
@@ -375,14 +349,6 @@ int main(void) {
   chThdSleepMilliseconds(1000);
   usbStart(serusbcfg.usbp, &usbcfg);
   usbConnectBus(serusbcfg.usbp);
-
-  /*
-   * Activates serial 1 (UART0) using the driver default configuration.
-   */
-  sdStart(&SD1, NULL);
-
-
-  chThdCreateStatic(waSerEcho, sizeof(waSerEcho), NORMALPRIO, thSerEcho, NULL);
 
   while (!chThdShouldTerminateX()) {
     chThdSleepMilliseconds(1000);
