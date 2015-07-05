@@ -88,9 +88,23 @@ typedef struct {
 	uint32_t desc;
 	void * addr;
 } bdt_t;
+/* BDT Description entry (p.884) */
+#define BDT_OWN		0x80
+#define BDT_DATA1	0x01
+#define BDT_DATA0	0x00
+#define BDT_DTS		0x08
+#define BDT_STALL	0x04
+#define BDT_PID(n)	(((n) >> 2) & 15)
+#define BDT_DESC(bc, data)	( BDT_OWN | BDT_DTS \
+				| ((data&0x1)<<6) \
+				| ((bc) << 16) )
 
-static bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4];
+#define TX   1
+#define RX   0
+#define ODD  1
+#define EVEN 0
 
+static bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4] __attribute__((aligned(512)));
 
 /*===========================================================================*/
 /* Driver local functions.                                                   */
@@ -108,12 +122,47 @@ static bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4];
  * @isr
  */
 OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
-  //~ USBDriver *usbp = &USBD1;
+  USBDriver *usbp = &USBD1;
+  uint8_t istat = USBOTG->ISTAT;
 
   OSAL_IRQ_PROLOGUE();
-  chprintf((BaseSequentialStream *)&SD1,"uISR %X\r\n",USBOTG->ISTAT);
-  USBOTG->ISTAT |= 0xFF;
-
+  //~ chprintf((BaseSequentialStream *)&SD1,"%X\r\n",USBOTG->ISTAT);
+  /* 04 - Bit2 - Start Of Frame token received */
+  if(istat & USBx_INTEN_SOFTOKEN) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t0");
+    USBOTG->ISTAT = USBx_INTEN_SOFTOKEN;
+  }
+  /* 08 - Bit3 - Token processing completed */
+  if(istat & USBx_ISTAT_TOKDNE) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t1");
+    USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
+  }
+  /* 01 - Bit0 - Valid USB Reset received */
+  if(istat & USBx_ISTAT_USBRST) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t2");
+    _usb_reset(usbp);
+    _usb_isr_invoke_event_cb(usbp, USB_EVENT_RESET);
+    USBOTG->ISTAT = USBx_ISTAT_USBRST;
+  }
+  /* 80 - Bit7 - STALL handshake received */
+  if(istat & USBx_ISTAT_STALL) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t3");
+    USBOTG->ISTAT = USBx_ISTAT_STALL;
+  }
+  /* 02 - Bit1 - ERRSTAT condition triggered */
+  if(istat & USBx_ISTAT_ERROR) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t4");
+    uint8_t err = USBOTG->ERRSTAT;
+    USBOTG->ERRSTAT = err;
+    USBOTG->ISTAT = USBx_ISTAT_ERROR;
+  }
+  /* 10 - Bit4 - Constant IDLE on USB bus detected */
+  if(istat & USBx_ISTAT_SLEEP) {
+    //~ chprintf((BaseSequentialStream *)&SD1,"\t5");
+    USBOTG->ISTAT = USBx_ISTAT_SLEEP;
+  }
+  /* 20 - Bit5 and 40 - 6 are not used */
+  //~ chprintf((BaseSequentialStream *)&SD1,"\r\n");
   OSAL_IRQ_EPILOGUE();
 }
 #endif /* KINETIS_USB_USE_USB0 */
@@ -189,8 +238,6 @@ void usb_lld_start(USBDriver *usbp) {
       USBOTG->CONTROL = USBx_CONTROL_DPPULLUPNONOTG;
     }
 #endif
-    /* Reset procedure enforced on driver start.*/
-    _usb_reset(usbp);
   }
   /* Configuration.*/
 }
@@ -222,11 +269,35 @@ void usb_lld_stop(USBDriver *usbp) {
  * @notapi
  */
 void usb_lld_reset(USBDriver *usbp) {
-  chprintf((BaseSequentialStream *)&SD1,"uReset\r\n");
+  //~ chprintf((BaseSequentialStream *)&SD1,"uReset\r\n");
+// initialize BDT toggle bits
+  USBOTG->CTL = USBx_CTL_ODDRST;
+  //~ ep0_tx_bdt_bank = 0;
 
   /* EP0 initialization.*/
   usbp->epc[0] = &ep0config;
   usb_lld_init_endpoint(usbp, 0);
+
+  // clear all ending interrupts
+  USBOTG->ERRSTAT = 0xFF;
+  USBOTG->ISTAT = 0xFF;
+
+  // set the address to zero during enumeration
+  usbp->address = 0;
+  usb_lld_set_address(usbp);
+
+  // enable other interrupts
+  USBOTG->ERREN = 0xFF;
+  USBOTG->INTEN = USBx_INTEN_TOKDNEEN |
+    USBx_INTEN_SOFTOKEN |
+    USBx_INTEN_STALLEN |
+    USBx_INTEN_ERROREN |
+    USBx_INTEN_USBRSTEN |
+    USBx_INTEN_SLEEPEN;
+
+  // is this necessary?
+  USBOTG->CTL = USBx_CTL_USBENSOFEN;
+
 }
 
 /**
@@ -238,7 +309,7 @@ void usb_lld_reset(USBDriver *usbp) {
  */
 void usb_lld_set_address(USBDriver *usbp) {
   (void)usbp;
-
+  USBOTG->ADDR = usbp->address;
 }
 
 /**
@@ -251,9 +322,19 @@ void usb_lld_set_address(USBDriver *usbp) {
  */
 void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
-  (void)ep;
-  chprintf((BaseSequentialStream *)&SD1,"uInitEP%d\r\n",ep);
 
+  uint8_t i = (ep<<2)|(RX<<1)|(EVEN);
+  // set up buffers to receive Setup and OUT packets
+  _bdt[i].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, 0);
+  //FIXME _bdt[i].addr = ep0_rx0_buf;
+  i = (ep<<2)|(RX<<1)|(ODD);
+  _bdt[i].desc = BDT_DESC(usbp->epc[ep]->out_maxsize, 0);
+  //FIXME _bdt[i].addr = ep0_rx1_buf;
+  _bdt[(ep<<2)|(TX<<1)|(EVEN)].desc = 0;
+  _bdt[(ep<<2)|(TX<<1)|(ODD)].desc = 0;
+
+  // activate endpoint ep
+  USBOTG->ENDPT[ep].V = USBx_ENDPTn_EPRXEN | USBx_ENDPTn_EPTXEN | USBx_ENDPTn_EPHSHK;
 }
 
 /**
