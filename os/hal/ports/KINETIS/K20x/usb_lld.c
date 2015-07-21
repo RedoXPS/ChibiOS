@@ -103,9 +103,21 @@ typedef struct {
 #define RX   0
 #define ODD  1
 #define EVEN 0
+#define BDT_INDEX(endpoint, tx, odd) (((endpoint) << 2) | ((tx) << 1) | (odd))
 
-static bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4] __attribute__((aligned(512)));
+static volatile bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4] __attribute__((aligned(512)));
 
+/* FIXME later with dyn alloc */
+static uint8_t _usbb[USB_MAX_ENDPOINTS][64] __attribute__((aligned(4)));
+static volatile uint8_t _usbbn=0;
+uint8_t* usb_alloc(uint8_t size)
+{
+  (void)size;
+  if(_usbbn < USB_MAX_ENDPOINTS)
+    return _usbb[_usbbn++];
+  sdPut(&SD1,'z');
+  while(1); /* Should not happen, ever */
+}
 /*===========================================================================*/
 /* Driver local functions.                                                   */
 /*===========================================================================*/
@@ -126,43 +138,45 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   uint8_t istat = USBOTG->ISTAT;
 
   OSAL_IRQ_PROLOGUE();
-  //~ chprintf((BaseSequentialStream *)&SD1,"%X\r\n",USBOTG->ISTAT);
   /* 04 - Bit2 - Start Of Frame token received */
   if(istat & USBx_INTEN_SOFTOKEN) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t0");
+    sdPut(&SD1,'0');
+    // do stuff, eventually
     USBOTG->ISTAT = USBx_INTEN_SOFTOKEN;
   }
   /* 08 - Bit3 - Token processing completed */
   if(istat & USBx_ISTAT_TOKDNE) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t1");
+    sdPut(&SD1,'1');
+    // do stuff
     USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
   }
   /* 01 - Bit0 - Valid USB Reset received */
   if(istat & USBx_ISTAT_USBRST) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t2");
     _usb_reset(usbp);
     _usb_isr_invoke_event_cb(usbp, USB_EVENT_RESET);
-    USBOTG->ISTAT = USBx_ISTAT_USBRST;
+    //~ USBOTG->ISTAT = USBx_ISTAT_USBRST;
+    return;
   }
   /* 80 - Bit7 - STALL handshake received */
   if(istat & USBx_ISTAT_STALL) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t3");
+    sdPut(&SD1,'4');
+    USBOTG->ENDPT[0].V = USBx_ENDPTn_EPRXEN | USBx_ENDPTn_EPTXEN | USBx_ENDPTn_EPHSHK;
     USBOTG->ISTAT = USBx_ISTAT_STALL;
   }
   /* 02 - Bit1 - ERRSTAT condition triggered */
   if(istat & USBx_ISTAT_ERROR) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t4");
+    sdPut(&SD1,'5');
     uint8_t err = USBOTG->ERRSTAT;
     USBOTG->ERRSTAT = err;
     USBOTG->ISTAT = USBx_ISTAT_ERROR;
   }
   /* 10 - Bit4 - Constant IDLE on USB bus detected */
   if(istat & USBx_ISTAT_SLEEP) {
-    //~ chprintf((BaseSequentialStream *)&SD1,"\t5");
+    sdPut(&SD1,'6');
     USBOTG->ISTAT = USBx_ISTAT_SLEEP;
   }
   /* 20 - Bit5 and 40 - 6 are not used */
-  //~ chprintf((BaseSequentialStream *)&SD1,"\r\n");
+  //~ sdPut(&SD1,'');
   OSAL_IRQ_EPILOGUE();
 }
 #endif /* KINETIS_USB_USE_USB0 */
@@ -202,10 +216,7 @@ void usb_lld_start(USBDriver *usbp) {
         _bdt[i].addr=0;
       }
 
-      /* Configure USB for 48 MHz clock */
-      SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(1); // USB = 96 MHz PLL / 2
-      /* USB uses PLL clock, trace is CPU clock, CLKOUT=OSCERCLK0 */
-      SIM->SOPT2 = SIM_SOPT2_USBSRC | SIM_SOPT2_PLLFLLSEL | SIM_SOPT2_TRACECLKSEL | SIM_SOPT2_CLKOUTSEL(6);
+      
 
       SIM->SCGC4 |= SIM_SCGC4_USBOTG;  /* Enable Clock */
       /* Reset USB module */
@@ -269,10 +280,12 @@ void usb_lld_stop(USBDriver *usbp) {
  * @notapi
  */
 void usb_lld_reset(USBDriver *usbp) {
-  //~ chprintf((BaseSequentialStream *)&SD1,"uReset\r\n");
-// initialize BDT toggle bits
+  // FIXME
+  _usbbn = 0;
+  sdPut(&SD1,'r');
+  
+  // initialize BDT toggle bits
   USBOTG->CTL = USBx_CTL_ODDRST;
-  //~ ep0_tx_bdt_bank = 0;
 
   /* EP0 initialization.*/
   usbp->epc[0] = &ep0config;
@@ -322,16 +335,14 @@ void usb_lld_set_address(USBDriver *usbp) {
  */
 void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
-
-  uint8_t i = (ep<<2)|(RX<<1)|(EVEN);
   // set up buffers to receive Setup and OUT packets
-  _bdt[i].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, 0);
-  //FIXME _bdt[i].addr = ep0_rx0_buf;
-  i = (ep<<2)|(RX<<1)|(ODD);
-  _bdt[i].desc = BDT_DESC(usbp->epc[ep]->out_maxsize, 0);
-  //FIXME _bdt[i].addr = ep0_rx1_buf;
-  _bdt[(ep<<2)|(TX<<1)|(EVEN)].desc = 0;
-  _bdt[(ep<<2)|(TX<<1)|(ODD)].desc = 0;
+  
+  _bdt[BDT_INDEX(ep, RX, EVEN)].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, 0);
+  _bdt[BDT_INDEX(ep, RX, EVEN)].addr = usb_alloc(usbp->epc[ep]->in_maxsize);
+  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = BDT_DESC(usbp->epc[ep]->out_maxsize, 0);
+  _bdt[BDT_INDEX(ep, RX,  ODD)].addr = usb_alloc(usbp->epc[ep]->out_maxsize);
+  _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
+  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = 0;
 
   // activate endpoint ep
   USBOTG->ENDPT[ep].V = USBx_ENDPTn_EPRXEN | USBx_ENDPTn_EPTXEN | USBx_ENDPTn_EPHSHK;

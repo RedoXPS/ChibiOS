@@ -202,6 +202,7 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 
   (void)usbp;
   (void)lang;
+  sdPut(&SD1,'A');
   switch (dtype) {
   case USB_DESCRIPTOR_DEVICE:
     return &vcom_device_descriptor;
@@ -266,6 +267,7 @@ static const USBEndpointConfig ep2config = {
  */
 static void usb_event(USBDriver *usbp, usbevent_t event) {
 
+  sdPut(&SD1,'B');
   switch (event) {
   case USB_EVENT_RESET:
     return;

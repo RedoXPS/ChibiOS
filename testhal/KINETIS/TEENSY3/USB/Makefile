@@ -82,7 +82,7 @@ include $(CHIBIOS)/os/hal/ports/KINETIS/K20x/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_k20x5.mk
-include $(CHIBIOS)/test/rt/test.mk
+#include $(CHIBIOS)/test/rt/test.mk
 
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/MK20DX128.ld

@@ -169,7 +169,7 @@ void k20x_clock_init(void) {
   #if KINETIS_SYSCLK_MAX == 48000000
   /* Config PLL input for 2 MHz */
   MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000UL) - 1);
-  /* Config PLL for 96 MHz output */
+  /* Config PLL for 96 MHz output, multiplier: 24 */
   MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
   #elif KINETIS_SYSCLK_MAX == 72000000
   /* Config PLL input for 2.667 MHz */
@@ -180,10 +180,12 @@ void k20x_clock_init(void) {
 
   /* Wait for PLL to start using crystal as its input */
   while (!(MCG->S & MCG_S_PLLST));
-
-  /* Wait for PLL to lock */
-  while (!(MCG->S & MCG_S_LOCK0));
-
+  #if KINETIS_SYSCLK_FREQUENCY == 48000000
+    /* Wait for PLL to lock */
+    while (!(MCG->S & MCG_S_LOCK0));
+    // config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash
+    SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |  SIM_CLKDIV1_OUTDIV4(3);
+  #endif
   /*
    * Now in PBE mode
    */
@@ -193,6 +195,12 @@ void k20x_clock_init(void) {
 
   /* Wait for PLL clock to be used */
   while ((MCG->S & MCG_S_CLKST_MASK) != MCG_S_CLKST_PLL);
+  
+  SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL;
+  /* Configure USB for 48 MHz clock */
+      SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(1); // USB = 96 MHz PLL / 2
+      /* USB uses PLL clock, trace is CPU clock, CLKOUT=OSCERCLK0 */
+      SIM->SOPT2 |= SIM_SOPT2_USBSRC;
 
   /*
    * Now in PEE mode
