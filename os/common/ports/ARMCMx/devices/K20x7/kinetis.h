@@ -37,12 +37,17 @@
 /**
  * @brief   Maximum system and core clock (f_SYS) frequency.
  */
-#define KINETIS_SYSCLK_MAX      72000000
+#define KINETIS_SYSCLK_MAX      72000000L
 
 /**
  * @brief   Maximum bus clock (f_BUS) frequency.
  */
-#define KINETIS_BUSCLK_MAX      36000000
+#define KINETIS_BUSCLK_MAX      72000000L
+
+/**
+ * @brief   Maximum flash clock (f_FLASH) frequency.
+ */
+#define KINETIS_FLASHCLK_MAX	25000000L
 
 /**
  * @name    K20x7 attributes
