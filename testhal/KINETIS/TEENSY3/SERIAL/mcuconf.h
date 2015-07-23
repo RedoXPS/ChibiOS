@@ -51,6 +51,7 @@
 #define KINETIS_SYSCLK_FREQUENCY    47972352UL  /* 32.768 kHz * 1464 (~48 MHz) */
 #endif /* 0 */
 
+#define KINETIS_SYSCLK_FREQUENCY  24000000L
 /*
  * SERIAL driver system settings.
  */
