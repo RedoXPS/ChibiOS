@@ -46,6 +46,11 @@ static msg_t thSerEcho(void *arg)
   return 0;
 }
 
+SerialConfig s0cfg =
+{
+  19200
+};
+
 /*
  * Application entry point.
  */
@@ -64,7 +69,9 @@ int main(void) {
   /*
    * Activates serial 1 (UART0) using the driver default configuration.
    */
-  sdStart(&SD1, NULL);
+  sdStart(&SD1, &s0cfg);
+  sdPut(&SD1,'B');
+  
 
 
   chThdCreateStatic(waSerEcho, sizeof(waSerEcho), NORMALPRIO, thSerEcho, NULL);
@@ -72,6 +79,7 @@ int main(void) {
   while (!chThdShouldTerminateX()) {
     chThdSleepMilliseconds(1000);
     palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
+    sdPut(&SD1,'B');
   }
 
   return 0;
