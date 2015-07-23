@@ -15,8 +15,8 @@
 */
 
 /**
- * @file    KL2x/hal_lld.h
- * @brief   Kinetis KL2x HAL subsystem low level driver header.
+ * @file    K20x/hal_lld.h
+ * @brief   Kinetis K20x HAL subsystem low level driver header.
  *
  * @addtogroup HAL
  * @{
