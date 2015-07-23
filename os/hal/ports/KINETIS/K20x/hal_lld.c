@@ -166,26 +166,34 @@ void k20x_clock_init(void) {
   /*
    * Now in FBE mode
    */
-  #if KINETIS_SYSCLK_MAX == 48000000
-  /* Config PLL input for 2 MHz */
+  
+  /* 
+   * Config PLL input for 2 MHz 
+   * TODO: Make sure KINETIS_XTAL_FREQUENCY >= 2Mhz && <= 50Mhz
+   */
   MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000UL) - 1);
-  /* Config PLL for 96 MHz output, multiplier: 24 */
+  /* 
+   * Config PLL for 48 MHz output as default setting
+   */
   MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
-  #elif KINETIS_SYSCLK_MAX == 72000000
-  /* Config PLL input for 2.667 MHz */
-  MCG->C5 = MCG_C5_PRDIV0(5);//(KINETIS_XTAL_FREQUENCY / 2667000UL) - 1);
-  /* Config PLL for 96 MHz output */
-  MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(3);
-  #endif
+  /*
+   * Config PLL output to match KINETIS_SYSCLK_FREQUENCY
+   * TODO: make sure KINETIS_SYSCLK_FREQUENCY is a match
+   */
+  for(i = 25; i < 56; i++)
+  {
+    if(i == KINETIS_SYSCLK_FREQUENCY/2000000UL)
+    {
+      /* Config PLL for 96 MHz output */
+      MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(i-24);
+    }
+  }
 
   /* Wait for PLL to start using crystal as its input */
   while (!(MCG->S & MCG_S_PLLST));
-  #if KINETIS_SYSCLK_FREQUENCY == 48000000
-    /* Wait for PLL to lock */
-    while (!(MCG->S & MCG_S_LOCK0));
-    // config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash
-    SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |  SIM_CLKDIV1_OUTDIV4(3);
-  #endif
+    
+  //FIXME config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash
+  SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |  SIM_CLKDIV1_OUTDIV4(3);
   /*
    * Now in PBE mode
    */
@@ -196,11 +204,10 @@ void k20x_clock_init(void) {
   /* Wait for PLL clock to be used */
   while ((MCG->S & MCG_S_CLKST_MASK) != MCG_S_CLKST_PLL);
   
-  SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL;
-  /* Configure USB for 48 MHz clock */
-      SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(1); // USB = 96 MHz PLL / 2
-      /* USB uses PLL clock, trace is CPU clock, CLKOUT=OSCERCLK0 */
-      SIM->SOPT2 |= SIM_SOPT2_USBSRC;
+  /* Use PLL instead of FLL, USB use PLL */
+  SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL | SIM_SOPT2_USBSRC;
+  /* FIXME: Force-configure USB for 48 MHz clock */
+  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC(0) | SIM_CLKDIV2_USBDIV(0);
 
   /*
    * Now in PEE mode
