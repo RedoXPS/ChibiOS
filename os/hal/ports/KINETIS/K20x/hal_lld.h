@@ -84,13 +84,24 @@
 #endif
 
 /**
+ * @brief   MCU PLL clock frequency.
+ */
+#if !defined(KINETIS_PLLCLK_FREQUENCY) || defined(__DOXYGEN__)
+#define KINETIS_PLLCLK_FREQUENCY    96000000UL
+#endif
+
+/**
  * @brief   Clock divider for core/system clocks (OUTDIV1).
  * @note    The allowed range is 1..16
  * @note    The default value is calculated for a 48 MHz system clock
  *          from a 96 MHz PLL output.
  */
 #if !defined(KINETIS_CLKDIV1_OUTDIV1) || defined(__DOXYGEN__)
-#define KINETIS_CLKDIV1_OUTDIV1     2
+  #if defined(KINETIS_SYSCLK_FREQUENCY) && KINETIS_SYSCLK_FREQUENCY > 0
+    #define KINETIS_CLKDIV1_OUTDIV1     (KINETIS_PLLCLK_FREQUENCY/KINETIS_SYSCLK_FREQUENCY)
+  #else
+    #define KINETIS_CLKDIV1_OUTDIV1     2
+  #endif
 #endif
 
 /**
@@ -100,7 +111,11 @@
  *          from a 96 MHz PLL output.
  */
 #if !defined(KINETIS_CLKDIV1_OUTDIV2) || defined(__DOXYGEN__)
-#define KINETIS_CLKDIV1_OUTDIV2     2
+  #if defined(KINETIS_BUSCLK_FREQUENCY) && KINETIS_BUSCLK_FREQUENCY > 0
+    #define KINETIS_CLKDIV1_OUTDIV2     (KINETIS_PLLCLK_FREQUENCY/KINETIS_BUSCLK_FREQUENCY)
+  #else
+    #define KINETIS_CLKDIV1_OUTDIV2     2
+  #endif
 #endif
 
 /**
@@ -110,7 +125,12 @@
  *          from a 96 MHz PLL output
  */
 #if !defined(KINETIS_CLKDIV1_OUTDIV4) || defined(__DOXYGEN__)
-#define KINETIS_CLKDIV1_OUTDIV4     4
+  #if defined(KINETIS_FLASHCLK_FREQUENCY) && KINETIS_FLASHCLK_FREQUENCY > 0
+    #define KINETIS_CLKDIV1_OUTDIV4     (KINETIS_PLLCLK_FREQUENCY/KINETIS_FLASHCLK_FREQUENCY)
+  #else
+    #define KINETIS_CLKDIV1_OUTDIV4     4
+  #endif
+
 #endif
 
 /**
@@ -133,13 +153,6 @@
  */
 #if !defined(KINETIS_MCG_FLL_DRS) || defined(__DOXYGEN__)
 #define KINETIS_MCG_FLL_DRS         2
-#endif
-
-/**
- * @brief   MCU PLL clock frequency.
- */
-#if !defined(KINETIS_PLLCLK_FREQUENCY) || defined(__DOXYGEN__)
-#define KINETIS_PLLCLK_FREQUENCY    96000000UL
 #endif
 
 /**
