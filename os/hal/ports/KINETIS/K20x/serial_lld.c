@@ -155,7 +155,7 @@ static void notify3(io_queue_t *qp)
  */
 static void configure_uart(UART_TypeDef *uart, const SerialConfig *config)
 {
-  uint32_t divisor = (KINETIS_SYSCLK_FREQUENCY * 2 + 1) / config->sc_speed;
+  uint32_t divisor = (KINETIS_BUSCLK_FREQUENCY * 2 + 1) / config->sc_speed;
 
   /* Disable UART while configuring */
   uart->C2 &= ~(UARTx_C2_RE | UARTx_C2_TE);

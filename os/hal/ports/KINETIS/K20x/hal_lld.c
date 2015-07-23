@@ -182,9 +182,9 @@ void k20x_clock_init(void) {
    */
   for(i = 25; i < 56; i++)
   {
-    if(i == KINETIS_SYSCLK_FREQUENCY/2000000UL)
+    if(i == KINETIS_PLLCLK_FREQUENCY/2000000UL)
     {
-      /* Config PLL for 96 MHz output */
+      /* Config PLL to match KINETIS_PLLCLK_FREQUENCY */
       MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(i-24);
     }
   }
@@ -198,6 +198,16 @@ void k20x_clock_init(void) {
   /*
    * Now in PBE mode
    */
+  /* Set the PLL dividers
+   * 0 => /1 , 15 => /16
+   * OUTDIV1 is CORE/SYS clock 
+   * OUTDIV2 is      BUS clock
+   * OUTDIV3 is    FLASH clocks
+   */
+  SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(KINETIS_CLKDIV1_OUTDIV1-1) | 
+                 SIM_CLKDIV1_OUTDIV2(KINETIS_CLKDIV1_OUTDIV2-1) | 
+                 SIM_CLKDIV1_OUTDIV4(KINETIS_CLKDIV1_OUTDIV4-1);
+  SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(0);
 
   /* Switch to PLL as clock source */
   MCG->C1 = MCG_C1_CLKS(0);
