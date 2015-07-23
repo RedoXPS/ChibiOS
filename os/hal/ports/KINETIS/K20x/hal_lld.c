@@ -207,7 +207,7 @@ void k20x_clock_init(void) {
   /* Use PLL instead of FLL, USB use PLL */
   SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL | SIM_SOPT2_USBSRC;
   /* FIXME: Force-configure USB for 48 MHz clock */
-  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC(0) | SIM_CLKDIV2_USBDIV(0);
+  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC | SIM_CLKDIV2_USBDIV(0);
 
   /*
    * Now in PEE mode
