@@ -19,7 +19,8 @@
 /*
  * HAL driver system settings.
  */
-#define KINETIS_SYSCLK_FREQUENCY              24000000L
+#define KINETIS_PLLCLK_FREQUENCY              48000000L
+#define KINETIS_SYSCLK_FREQUENCY              48000000L
 /*
  * SERIAL driver system settings.
  */

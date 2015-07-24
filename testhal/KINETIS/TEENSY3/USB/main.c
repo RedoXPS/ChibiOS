@@ -202,13 +202,16 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 
   (void)usbp;
   (void)lang;
-  sdPut(&SD1,'A');
+
   switch (dtype) {
   case USB_DESCRIPTOR_DEVICE:
+    sdPut(&SD1,'A');
     return &vcom_device_descriptor;
   case USB_DESCRIPTOR_CONFIGURATION:
+    sdPut(&SD1,'B');
     return &vcom_configuration_descriptor;
   case USB_DESCRIPTOR_STRING:
+    sdPut(&SD1,'C');
     if (dindex < 4)
       return &vcom_strings[dindex];
   }
@@ -267,13 +270,15 @@ static const USBEndpointConfig ep2config = {
  */
 static void usb_event(USBDriver *usbp, usbevent_t event) {
 
-  sdPut(&SD1,'B');
   switch (event) {
   case USB_EVENT_RESET:
+//     sdPut(&SD1,'D');
     return;
   case USB_EVENT_ADDRESS:
+    sdPut(&SD1,'E');
     return;
   case USB_EVENT_CONFIGURED:
+    sdPut(&SD1,'F');
     chSysLockFromISR();
 
     /* Enables the endpoints specified into the configuration.
@@ -288,10 +293,13 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysUnlockFromISR();
     return;
   case USB_EVENT_SUSPEND:
+    sdPut(&SD1,'G');
     return;
   case USB_EVENT_WAKEUP:
+    sdPut(&SD1,'H');
     return;
   case USB_EVENT_STALLED:
+    sdPut(&SD1,'I');
     return;
   }
   return;
