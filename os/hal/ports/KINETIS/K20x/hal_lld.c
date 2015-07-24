@@ -192,8 +192,6 @@ void k20x_clock_init(void) {
   /* Wait for PLL to start using crystal as its input */
   while (!(MCG->S & MCG_S_PLLST));
     
-  //FIXME config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash
-  SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |  SIM_CLKDIV1_OUTDIV4(3);
   /*
    * Now in PBE mode
    */
@@ -217,7 +215,7 @@ void k20x_clock_init(void) {
   /* Use PLL instead of FLL, USB use PLL */
   SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL | SIM_SOPT2_USBSRC;
   /* FIXME: Force-configure USB for 48 MHz clock */
-  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC | SIM_CLKDIV2_USBDIV(0);
+  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC | SIM_CLKDIV2_USBDIV(1);
 
   /*
    * Now in PEE mode
