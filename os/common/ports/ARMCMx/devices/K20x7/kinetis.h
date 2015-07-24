@@ -42,7 +42,7 @@
 /**
  * @brief   Maximum bus clock (f_BUS) frequency.
  */
-#define KINETIS_BUSCLK_MAX      72000000L
+#define KINETIS_BUSCLK_MAX      50000000L
 
 /**
  * @brief   Maximum flash clock (f_FLASH) frequency.
