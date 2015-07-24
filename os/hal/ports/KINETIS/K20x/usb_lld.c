@@ -86,18 +86,26 @@ static const USBEndpointConfig ep0config = {
 /* Buffer Descriptor Table (BDT) */
 typedef struct {
 	uint32_t desc;
-	void * addr;
+	uint8_t* addr;
 } bdt_t;
-/* BDT Description entry (p.884) */
+/* BDT Description entry (p.889) */
 #define BDT_OWN		0x80
-#define BDT_DATA1	0x01
-#define BDT_DATA0	0x00
+#define BDT_DATA  0x40
+#define BDT_KEEP  0x20
+#define BDT_NINC  0x10
 #define BDT_DTS		0x08
 #define BDT_STALL	0x04
-#define BDT_PID(n)	(((n) >> 2) & 15)
-#define BDT_DESC(bc, data)	( BDT_OWN | BDT_DTS \
-				| ((data&0x1)<<6) \
-				| ((bc) << 16) )
+
+#define BDT_DESC(bc, data)	(BDT_OWN | BDT_DTS | ((data&0x1)<<6) | ((bc) << 16))
+#define BDT_DESC_DATA0  0
+#define BDT_DESC_DATA1  1
+
+/* see p.891 */
+#define BDT_TOK_PID(n)	(((n) >> 2) & 15)
+#define TOK_PID_SETUP   0x0D
+#define TOK_PID_IN      0x09
+#define TOK_PID_OUT     0x01
+
 
 #define TX   1
 #define RX   0
@@ -105,7 +113,10 @@ typedef struct {
 #define EVEN 0
 #define BDT_INDEX(endpoint, tx, odd) (((endpoint) << 2) | ((tx) << 1) | (odd))
 
-static volatile bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*4] __attribute__((aligned(512)));
+/* The USB-FS needs 2 BDT entry per endpoint direction
+ *    that adds to: 2*2*16 BDT entries for 16 bi-directional EP
+ */
+static volatile bdt_t _bdt[(USB_MAX_ENDPOINTS+1)*2*2] __attribute__((aligned(512)));
 
 /* FIXME later with dyn alloc */
 static uint8_t _usbb[USB_MAX_ENDPOINTS][64] __attribute__((aligned(4)));
@@ -125,7 +136,42 @@ uint8_t* usb_alloc(uint8_t size)
 
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
-/*===========================================================================*/
+/*============================================================================*/
+
+typedef struct {
+  union {
+     struct {
+      uint8_t bmRequestType;
+      uint8_t bRequest;
+    };
+    uint16_t wRequestAndType;
+  };
+  uint16_t wValue;
+  uint16_t wIndex;
+  uint16_t wLength;
+} usb_setup_t;
+
+typedef union {
+  usb_setup_t setup;
+  struct {
+    uint32_t word1;
+    uint32_t word2;
+  } raw;
+} usb_setup_raw_t;
+
+// static usb_setup_raw_t usb_setup_;
+
+
+#define USB_SET_ADDRESS       0x0500
+#define USB_SET_CONFIGURATION 0x0900
+#define USB_GET_CONFIGURATION 0x0880
+#define USB_GET_STATUS_DEVICE 0x0080
+#define USB_GET_STATUS_ENDPT  0x0082
+#define USB_CLEAR_FEATURE     0x0102
+#define USB_SET_FEATURE       0x0302
+#define USB_GET_DESCRIPTOR    0x0680
+#define USB_GET_DESCRIPTOR2   0x0681
+
 
 #if KINETIS_USB_USE_USB0 || defined(__DOXYGEN__)
 /**
@@ -140,15 +186,31 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   OSAL_IRQ_PROLOGUE();
   /* 04 - Bit2 - Start Of Frame token received */
   if(istat & USBx_INTEN_SOFTOKEN) {
-    sdPut(&SD1,'0');
+//     sdPut(&SD1,'a');
+    _usb_isr_invoke_sof_cb(usbp);
     // do stuff, eventually
     USBOTG->ISTAT = USBx_INTEN_SOFTOKEN;
   }
   /* 08 - Bit3 - Token processing completed */
   if(istat & USBx_ISTAT_TOKDNE) {
-    sdPut(&SD1,'1');
-    // do stuff
-    USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
+//     sdPut(&SD1,'b');
+    uint8_t stat = USBOTG->STAT;
+    uint8_t ep = stat >>4;
+    if(ep > USB_MAX_ENDPOINTS)
+      return;
+//     const USBEndpointConfig *epc = usbp->epc[ep];
+//     bdt_t *bdte;
+
+//     sdPut(&SD1,'0'+ep);
+    switch(ep)
+    {
+      // USB Control
+      case 0:
+        _usb_isr_invoke_setup_cb(usbp, ep);
+        USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
+        break;
+//     USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
+    }
   }
   /* 01 - Bit0 - Valid USB Reset received */
   if(istat & USBx_ISTAT_USBRST) {
@@ -159,20 +221,20 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   }
   /* 80 - Bit7 - STALL handshake received */
   if(istat & USBx_ISTAT_STALL) {
-    sdPut(&SD1,'4');
+    sdPut(&SD1,'d');
     USBOTG->ENDPT[0].V = USBx_ENDPTn_EPRXEN | USBx_ENDPTn_EPTXEN | USBx_ENDPTn_EPHSHK;
     USBOTG->ISTAT = USBx_ISTAT_STALL;
   }
   /* 02 - Bit1 - ERRSTAT condition triggered */
   if(istat & USBx_ISTAT_ERROR) {
-    sdPut(&SD1,'5');
+    sdPut(&SD1,'e');
     uint8_t err = USBOTG->ERRSTAT;
     USBOTG->ERRSTAT = err;
     USBOTG->ISTAT = USBx_ISTAT_ERROR;
   }
   /* 10 - Bit4 - Constant IDLE on USB bus detected */
   if(istat & USBx_ISTAT_SLEEP) {
-    sdPut(&SD1,'6');
+    sdPut(&SD1,'f');
     USBOTG->ISTAT = USBx_ISTAT_SLEEP;
   }
   /* 20 - Bit5 and 40 - 6 are not used */
@@ -215,8 +277,6 @@ void usb_lld_start(USBDriver *usbp) {
         _bdt[i].desc=0;
         _bdt[i].addr=0;
       }
-
-      
 
       SIM->SCGC4 |= SIM_SCGC4_USBOTG;  /* Enable Clock */
       /* Reset USB module */
@@ -282,8 +342,8 @@ void usb_lld_stop(USBDriver *usbp) {
 void usb_lld_reset(USBDriver *usbp) {
   // FIXME
   _usbbn = 0;
-  sdPut(&SD1,'r');
-  
+  sdPut(&SD1,'#');
+
   // initialize BDT toggle bits
   USBOTG->CTL = USBx_CTL_ODDRST;
 
@@ -310,7 +370,6 @@ void usb_lld_reset(USBDriver *usbp) {
 
   // is this necessary?
   USBOTG->CTL = USBx_CTL_USBENSOFEN;
-
 }
 
 /**
@@ -335,16 +394,21 @@ void usb_lld_set_address(USBDriver *usbp) {
  */
 void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
-  // set up buffers to receive Setup and OUT packets
-  
-  _bdt[BDT_INDEX(ep, RX, EVEN)].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, 0);
-  _bdt[BDT_INDEX(ep, RX, EVEN)].addr = usb_alloc(usbp->epc[ep]->in_maxsize);
-  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = BDT_DESC(usbp->epc[ep]->out_maxsize, 0);
-  _bdt[BDT_INDEX(ep, RX,  ODD)].addr = usb_alloc(usbp->epc[ep]->out_maxsize);
-  _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
-  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = 0;
 
-  // activate endpoint ep
+  /* FIXME: Only works for EP0 */
+
+  /* RXe */
+  _bdt[BDT_INDEX(ep, RX, EVEN)].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, BDT_DESC_DATA0);
+  _bdt[BDT_INDEX(ep, RX, EVEN)].addr = usb_alloc(usbp->epc[ep]->in_maxsize);
+  /* RXo */
+  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = BDT_DESC(usbp->epc[ep]->in_maxsize, BDT_DESC_DATA0);
+  _bdt[BDT_INDEX(ep, RX,  ODD)].addr = usb_alloc(usbp->epc[ep]->in_maxsize);
+  /* TXe, not used yet */
+  _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
+  /* TXo, not used yet */
+  _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
+
+  /* Activate endpoint */
   USBOTG->ENDPT[ep].V = USBx_ENDPTn_EPRXEN | USBx_ENDPTn_EPTXEN | USBx_ENDPTn_EPHSHK;
 }
 
@@ -357,7 +421,7 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_disable_endpoints(USBDriver *usbp) {
   (void)usbp;
-
+  sdPut(&SD1,'p');
 }
 
 /**
@@ -375,6 +439,7 @@ void usb_lld_disable_endpoints(USBDriver *usbp) {
 usbepstatus_t usb_lld_get_status_out(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
+    sdPut(&SD1,'q');
 
   return EP_STATUS_DISABLED;
 }
@@ -394,6 +459,7 @@ usbepstatus_t usb_lld_get_status_out(USBDriver *usbp, usbep_t ep) {
 usbepstatus_t usb_lld_get_status_in(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
+  sdPut(&SD1,'r');
 
   return EP_STATUS_DISABLED;
 }
@@ -416,7 +482,14 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
   (void)usbp;
   (void)ep;
   (void)buf;
+  sdPut(&SD1,'s');
 
+//   pmap = USB_ADDR2PTR(udp->RXADDR0);
+/*  for (n = 0; n < 4; n++) {
+    *(uint16_t *)buf = (uint16_t)*pmap++;
+    buf += 2;
+  }
+  */
 }
 
 /**
@@ -429,7 +502,7 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
  */
 void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
   USBOutEndpointState *osp = usbp->epc[ep]->out_state;
-
+  sdPut(&SD1,'t');
   /* Transfer initialization.*/
   if (osp->rxsize == 0)         /* Special case for zero sized packets.*/
     osp->rxpkts = 1;
@@ -447,14 +520,16 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
  * @notapi
  */
 void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
-  size_t n;
-  USBInEndpointState *isp = usbp->epc[ep]->in_state;
-
+  (void)usbp;
+  (void)ep;
+//   size_t n;
+//   USBInEndpointState *isp = usbp->epc[ep]->in_state;
+  sdPut(&SD1,'u');
   /* Transfer initialization.*/
-  n = isp->txsize;
+  /*n = isp->txsize;
   if (n > (size_t)usbp->epc[ep]->in_maxsize)
     n = (size_t)usbp->epc[ep]->in_maxsize;
-
+  */
   /*
   if (isp->txqueued)
     usb_packet_write_from_queue(USB_GET_DESCRIPTOR(ep),
@@ -476,7 +551,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
 void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-
+  sdPut(&SD1,'v');
 }
 
 /**
@@ -490,7 +565,7 @@ void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
 void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-
+  sdPut(&SD1,'w');
 }
 
 /**
@@ -504,7 +579,7 @@ void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-
+  sdPut(&SD1,'x');
 }
 
 /**
@@ -518,7 +593,7 @@ void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_in(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-
+  sdPut(&SD1,'y');
 }
 
 /**

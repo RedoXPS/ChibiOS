@@ -2329,6 +2329,15 @@ typedef struct {
 /*                         USB OTG                              */
 /*                                                              */
 /****************************************************************/
+
+/********  Bits definition for USBx_STAT register  *************/
+#define USBx_STAT_ENDP_MASK         ((uint8_t)0xF0) /*!< Endpoint address mask*/
+#define USBx_STAT_ENDP_SHIFT        ((uint8_t)0x04) /*!< Endpoint address shift*/
+#define USBx_STAT_TX_MASK          ((uint8_t)0x08) /*!< Transmit indicator mask*/
+#define USBx_STAT_TX_SHIFT          ((uint8_t)0x03) /*!< Transmit indicator shift*/
+#define USBx_STAT_ODD_MASK         ((uint8_t)0x04) /*!< EVEN/ODD bank indicator mask*/
+#define USBx_STAT_ODD_SHIFT         ((uint8_t)0x02) /*!< EVEN/ODD bank indicator shift */
+
 /********  Bits definition for USBx_ISTAT register  *************/
 #define USBx_ISTAT_STALL             ((uint8_t)0x80) /*!< Stall interrupt */
 #define USBx_ISTAT_ATTACH            ((uint8_t)0x40) /*!< Attach interrupt */
