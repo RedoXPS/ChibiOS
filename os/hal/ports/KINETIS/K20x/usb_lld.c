@@ -193,7 +193,10 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         {
           case BDT_PID_SETUP:                                           // SETUP
 //             sdPut(&SD1,',');
-            bd->desc = BDT_DESC(epc->out_maxsize,DATA1);
+            if(tx_rx == RX)
+              bd->desc = BDT_DESC(epc->out_maxsize,DATA1);
+              else
+              sdPut(&SD1,'(');
             // Clear any pending IN stuff
             _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
             _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
@@ -203,7 +206,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
 
             break;
           case BDT_PID_IN:                                                 // IN
-            if(usbp->address != usbp->setup[2])
+            if(usbp->setup[2] && usbp->address != usbp->setup[2])
             {
               sdPut(&SD1,'_');
               usbp->address = usbp->setup[2];
@@ -216,8 +219,8 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           case BDT_PID_OUT:                                               // OUT
             sdPut(&SD1,':');
             // Switch to the other buffer
-//             usbp->epc[ep]->out_state->data_bank = DATA1;
-//             bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
+            usbp->epc[ep]->out_state->data_bank = DATA1;
+            bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
             break;
           case BDT_PID_SOF:
             sdPut(&SD1,'!');
@@ -558,7 +561,7 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
   size_t n;
-  sdPut(&SD1,'n');
+//   sdPut(&SD1,'n');
   const USBEndpointConfig *epc = usbp->epc[ep];
   USBInEndpointState *isp = epc->in_state;
 
@@ -573,7 +576,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
     sdPut(&SD1,'x');
   else
   {
-    sdPut(&SD1,'y');
+//     sdPut(&SD1,'y');
     chprintf((BaseSequentialStream *)&SD1," %d in%d out%d", n, epc->in_state->data_bank, epc->out_state->data_bank);
     /* Copy from buf to _usbb[] */
     size_t i=0;
