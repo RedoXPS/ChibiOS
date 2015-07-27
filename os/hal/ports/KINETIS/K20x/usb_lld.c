@@ -282,8 +282,9 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           case BDT_PID_SETUP:
             sdPut(&SD1,',');
             _usb_isr_invoke_setup_cb(usbp, ep);
+             USBOTG->CTL = USBx_CTL_USBENSOFEN;
             break;
-          case BDT_PID_IN+1:
+          case 1+BDT_PID_IN:
             sdPut(&SD1,',');
             if(usbp->address != usbp->setup[2])
             {
@@ -303,12 +304,18 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
             epc->out_state->data_bank ^= DATA1;
             bd->desc = BDT_DESC(epc->out_maxsize,epc->out_state->data_bank);
             break;
+          case BDT_PID_SOF:
+            sdPut(&SD1,'!');
+            break;
           default:
             sdPut(&SD1,'$');
             break;
         }
-        USBOTG->CTL = USBx_CTL_USBENSOFEN;
+         USBOTG->CTL = USBx_CTL_USBENSOFEN;
       } break;
+      default:
+        sdPut(&SD1,'+');
+        break;
     }
     USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
   }
@@ -456,7 +463,7 @@ void usb_lld_reset(USBDriver *usbp) {
 
   // set the address to zero during enumeration
   usbp->address = 0;
-  usb_lld_set_address(usbp);
+  USBOTG->ADDR = 0;
 
   // enable other interrupts
   USBOTG->ERREN = 0xFF;
@@ -592,7 +599,6 @@ usbepstatus_t usb_lld_get_status_in(USBDriver *usbp, usbep_t ep) {
  */
 void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
    sdPut(&SD1,'l');
-
 
   const USBEndpointConfig *epc = usbp->epc[ep];
   // Get the BDT entry
