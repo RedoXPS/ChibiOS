@@ -44,7 +44,7 @@
 /**
  * @brief   This device requires the address change after the status packet.
  */
-//#define USB_SET_ADDRESS_MODE                USB_LATE_SET_ADDRESS
+#define USB_SET_ADDRESS_MODE                USB_LATE_SET_ADDRESS
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -63,7 +63,7 @@
  * @brief   USB1 interrupt priority level setting.
  */
 #if !defined(KINETIS_USB_USB0_IRQ_PRIORITY)|| defined(__DOXYGEN__)
-#define KINETIS_USB_USB0_IRQ_PRIORITY      10
+#define KINETIS_USB_USB0_IRQ_PRIORITY      5
 #endif
 
 
