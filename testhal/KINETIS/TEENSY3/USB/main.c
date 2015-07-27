@@ -27,9 +27,9 @@ static uint8_t vcom_device_descriptor_data[18] = {
                          0x0179,        /* idVendor.                        */
                          0x0001,        /* idProduct.                       */
                          0x0200,        /* bcdDevice.                       */
-                         1,             /* iManufacturer.                   */
-                         2,             /* iProduct.                        */
-                         3,             /* iSerialNumber.                   */
+                         0,             /* iManufacturer.                   */
+                         0,             /* iProduct.                        */
+                         0,             /* iSerialNumber.                   */
                          1)             /* bNumConfigurations.              */
 };
 
@@ -42,7 +42,7 @@ static USBDescriptor vcom_device_descriptor = {
 };
 
 /* Configuration Descriptor tree for a HID device. */
-static uint8_t vcom_configuration_descriptor_data[67] = {
+static uint8_t vcom_configuration_descriptor_data[18] = {
   /* Configuration Descriptor.*/
   USB_DESC_CONFIGURATION(18,            /* wTotalLength.                    */
                          0x01,          /* bNumInterfaces.                  */
@@ -81,7 +81,7 @@ static uint8_t vcom_string0[] = {
  * Vendor string.
  */
 static uint8_t vcom_string1[] = {
-  USB_DESC_BYTE(7),                    /* bLength.                         */
+  USB_DESC_BYTE(7*2+2),                 /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
   'N', 0, 'o', 0, 'p', 0, 'e', 0, 'L', 0, 'a', 0, 'b', 0,
 };
@@ -90,9 +90,9 @@ static uint8_t vcom_string1[] = {
  * Device Description string.
  */
 static uint8_t vcom_string2[] = {
-  USB_DESC_BYTE(5),                    /* bLength.                         */
+  USB_DESC_BYTE(2+2*5),                     /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'C', 0, 'h', 'T', 0, 's', 0, 'y', 0,
+  'C', 0, 'h', 0, 'T', 0, 's', 0, 'y', 0,
 };
 
 /*
