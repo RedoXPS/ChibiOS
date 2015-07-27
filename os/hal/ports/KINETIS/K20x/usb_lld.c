@@ -51,7 +51,7 @@ USBDriver USBD1;
  * @note    It is an union because IN and OUT endpoints are never used at the
  *          same time for EP0.
  */
-static union {
+static struct {
   /**
    * @brief   IN EP0 state.
    */
@@ -99,6 +99,10 @@ typedef struct {
 #define BDT_DESC(bc, data)	(BDT_OWN | BDT_DTS | ((data&0x1)<<6) | ((bc) << 16))
 
 /* see p.891 */
+#define BDT_PID_OUT   0x01
+#define BDT_PID_IN    0x09
+#define BDT_PID_SOF   0x05
+#define BDT_PID_SETUP 0x0D
 #define BDT_TOK_PID(n)	(((n) >> 2) & 15)
 
 #define DATA0 0
@@ -224,41 +228,6 @@ static void usb_packet_write_from_queue(usbep_t ep,
 /* Driver interrupt handlers.                                                */
 /*============================================================================*/
 
-typedef struct {
-  union {
-     struct {
-      uint8_t bmRequestType;
-      uint8_t bRequest;
-    };
-    uint16_t wRequestAndType;
-  };
-  uint16_t wValue;
-  uint16_t wIndex;
-  uint16_t wLength;
-} usb_setup_t;
-
-typedef union {
-  usb_setup_t setup;
-  struct {
-    uint32_t word1;
-    uint32_t word2;
-  } raw;
-} usb_setup_raw_t;
-
-// static usb_setup_raw_t usb_setup_;
-
-
-#define USB_SET_ADDRESS       0x0500
-#define USB_SET_CONFIGURATION 0x0900
-#define USB_GET_CONFIGURATION 0x0880
-#define USB_GET_STATUS_DEVICE 0x0080
-#define USB_GET_STATUS_ENDPT  0x0082
-#define USB_CLEAR_FEATURE     0x0102
-#define USB_SET_FEATURE       0x0302
-#define USB_GET_DESCRIPTOR    0x0680
-#define USB_GET_DESCRIPTOR2   0x0681
-
-
 #if KINETIS_USB_USE_USB0 || defined(__DOXYGEN__)
 /**
  * @brief   USB low priority interrupt handler.
@@ -282,18 +251,64 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
 //     sdPut(&SD1,'b');
     uint8_t stat = USBOTG->STAT;
     uint8_t ep = stat >>4;
-    if(ep > USB_MAX_ENDPOINTS)
+    if(ep > USB_MAX_ENDPOINTS) {
+      sdPut(&SD1,'=');
       return;
+    }
+    const USBEndpointConfig *epc = usbp->epc[ep];
+
+    // Get the correct BDT
+    uint8_t odd_even = (stat & USBx_STAT_ODD_MASK) >> USBx_STAT_ODD_SHIFT;
+    uint8_t tx_rx    = (stat & USBx_STAT_TX_MASK) >> USBx_STAT_TX_SHIFT;
+
+    if(tx_rx == RX)
+      usbp->epc[ep]->out_state->odd_even = odd_even;
+    else
+    {
+      sdPut(&SD1,'*');
+//           usbp->epc[ep]->in_state->odd_even = odd_even;
+    }
+
+    bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep,tx_rx,odd_even)];
+
     switch(ep)
     {
       // USB Default Control EP
       case 0:
-        // Get the correct BDT
-        usbp->epc[ep]->out_state->odd_even = (stat & USBx_STAT_ODD_MASK) >> USBx_STAT_ODD_SHIFT;
-
-        _usb_isr_invoke_setup_cb(usbp, ep);
+      {
+        switch(BDT_TOK_PID(bd->desc))
+        {
+          case BDT_PID_IN:
+          case BDT_PID_SETUP:
+            sdPut(&SD1,',');
+            _usb_isr_invoke_setup_cb(usbp, ep);
+            break;
+          case BDT_PID_IN+1:
+            sdPut(&SD1,',');
+            if(usbp->address != usbp->setup[2])
+            {
+              sdPut(&SD1,'^');
+//               usbp->address = usbp->setup[2];
+//               usb_lld_set_address(usbp);
+//               _usb_isr_invoke_event_cb(usbp, USB_EVENT_ADDRESS);
+//               usbp->state = USB_SELECTED;
+//               usb_lld_set_address(usbp);
+//               _usb_isr_invoke_out_cb(usbp, ep);
+            }
+//             _usb_isr_invoke_in_cb(usbp, ep);
+            break;
+          case BDT_PID_OUT:
+            sdPut(&SD1,':');
+            // Switch to the other buffer
+            epc->out_state->data_bank ^= DATA1;
+            bd->desc = BDT_DESC(epc->out_maxsize,epc->out_state->data_bank);
+            break;
+          default:
+            sdPut(&SD1,'$');
+            break;
+        }
         USBOTG->CTL = USBx_CTL_USBENSOFEN;
-        break;
+      } break;
     }
     USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
   }
