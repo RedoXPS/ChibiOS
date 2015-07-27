@@ -34,7 +34,7 @@
 /**
  * @brief   Maximum endpoint address.
  */
-#define USB_MAX_ENDPOINTS                   15
+#define USB_MAX_ENDPOINTS                   4
 
 /**
  * @brief   Status stage handling method.
@@ -123,6 +123,10 @@ typedef struct {
     } queue;
     /* End of the mandatory fields.*/
   } mode;
+  /* */
+  bool                          odd_even;  /* ODD / EVEN */
+  /* */
+  bool                          data_bank; /* DATA0 / DATA1 */
 } USBInEndpointState;
 
 /**
@@ -160,6 +164,10 @@ typedef struct {
    * @brief   Number of packets to receive.
    */
   uint16_t                      rxpkts;
+  /* */
+  bool                          odd_even;  /* ODD / EVEN */
+  /* */
+  bool                          data_bank; /* DATA0 / DATA1 */
 } USBOutEndpointState;
 
 /**

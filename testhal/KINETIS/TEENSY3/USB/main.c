@@ -284,11 +284,11 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     /* Enables the endpoints specified into the configuration.
        Note, this callback is invoked from an ISR so I-Class functions
        must be used.*/
-    usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &ep1config);
-    usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &ep2config);
+//     usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &ep1config);
+//     usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &ep2config);
 
     /* Resetting the state of the CDC subsystem.*/
-    sduConfigureHookI(&SDU1);
+//     sduConfigureHookI(&SDU1);
 
     chSysUnlockFromISR();
     return;
