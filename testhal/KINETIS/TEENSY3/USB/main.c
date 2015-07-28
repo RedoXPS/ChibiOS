@@ -209,7 +209,7 @@ int main(void) {
    * after a reset.
    */
 
-  usbDisconnectBus(serusbcfg.usbp);
+  usbDisconnectBus(&USBD1);
   chThdSleepMilliseconds(1000);
   usbStart(&USBD1, &usbcfg);
   usbConnectBus(&USBD1);
