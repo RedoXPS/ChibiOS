@@ -158,8 +158,8 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
     sdPut(&SD1,'x');
   else
   {
-     sdPut(&SD1,'y');
-     chprintf((BaseSequentialStream *)&SD1,"tx%d/%d",n,epc->in_maxsize);
+//     sdPut(&SD1,'y');
+//     chprintf((BaseSequentialStream *)&SD1,"tx%d/%d",n,epc->in_maxsize);
 //    chprintf((BaseSequentialStream *)&SD1," %d in%d out%d", n, epc->in_state->data_bank, epc->out_state->data_bank);
     /* Copy from buf to _usbb[] */
     size_t i=0;
@@ -218,7 +218,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       epc->out_state->odd_even = odd_even;
 //     else
 //       epc->in_state->odd_even = odd_even;
-
+//    sdPut(&SD1,'0'+ep);
     switch(BDT_TOK_PID(bd->desc))
     {
       case BDT_PID_SETUP:                                           // SETUP
@@ -237,7 +237,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         break;
       case BDT_PID_IN:                                                 // IN
         // Special case for SetAddress for EP0
-        if(ep == 0 && usbp->setup[2] && usbp->address != usbp->setup[2])
+        if(ep == 0 && *(uint16_t*)usbp->setup == 0x0500)
         {
           sdPut(&SD1,'_');
           usbp->address = usbp->setup[2];
@@ -247,24 +247,26 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         }
         else
         {
-          sdPut(&SD1,';');
+//          sdPut(&SD1,';');
           uint16_t txed = BDT_BC(bd->desc);
           epc->in_state->txcnt += txed;
-          chprintf((BaseSequentialStream *)&SD1,"txed%d/%d",epc->in_state->txcnt,epc->in_state->txsize);
-          if(epc->in_state->txcnt < epc->in_state->txsize)
-          {
-            sdPut(&SD1,'+');
-            if (!epc->in_state->txqueued)
+//          chprintf((BaseSequentialStream *)&SD1,"txed%d/%d",epc->in_state->txcnt,epc->in_state->txsize);
+          if(txed) {
+            if(epc->in_state->txcnt < epc->in_state->txsize)
             {
-              epc->in_state->mode.linear.txbuf += txed;
+              sdPut(&SD1,'+');
+              if (!epc->in_state->txqueued)
+              {
+                epc->in_state->mode.linear.txbuf += txed;
+              }
+              usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
             }
-            usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
+            else
+            {
+                _usb_isr_invoke_in_cb(usbp,ep);
+            }
+  //          chprintf((BaseSequentialStream *)&SD1,"%d %d",usbp->ep0n,);
           }
-          else
-          {
-              _usb_isr_invoke_in_cb(usbp,ep);
-          }
-//          chprintf((BaseSequentialStream *)&SD1,"%d %d",usbp->ep0n,);
         }
         break;
       case BDT_PID_OUT:                                               // OUT
