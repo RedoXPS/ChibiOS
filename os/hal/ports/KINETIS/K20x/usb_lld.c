@@ -153,10 +153,11 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
 
   if (n > (size_t)epc->in_maxsize)
     n = (size_t)epc->in_maxsize;
-
+//  sdPut(&SD1,'0'+ep);
+//  chprintf((BaseSequentialStream *)&SD1,"tx%d/%d in%d out%d",n,epc->in_maxsize, epc->in_state->data_bank, epc->out_state->data_bank);
   if (isp->txqueued)
   {
-    sdPut(&SD1,'>');
+//    sdPut(&SD1,'>');
     output_queue_t *oq = epc->in_state->mode.queue.txqueue;
     size_t i;
     for(i=0;i<n;i++)
@@ -177,8 +178,6 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
   else
   {
 //     sdPut(&SD1,'y');
-//     chprintf((BaseSequentialStream *)&SD1,"tx%d/%d",n,epc->in_maxsize);
-//    chprintf((BaseSequentialStream *)&SD1," %d in%d out%d", n, epc->in_state->data_bank, epc->out_state->data_bank);
     /* Copy from buf to _usbb[] */
     size_t i=0;
     for(i=0;i<n;i++)
@@ -199,15 +198,16 @@ void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
 
   bdt_t *bd = (bdt_t *)&_bdt[BDT_INDEX(ep, RX, epc->out_state->odd_even)];
 
-  USBOutEndpointState *isp = epc->out_state;
+  USBOutEndpointState *osp = epc->out_state;
 
   if (n > (size_t)epc->out_maxsize)
     n = (size_t)epc->out_maxsize;
 
-  if (isp->rxqueued)
+//    chprintf((BaseSequentialStream *)&SD1," rx%d/%d in%d out%d", n,epc->out_maxsize, epc->in_state->data_bank, epc->out_state->data_bank);
+  if (osp->rxqueued)
   {
-    sdPut(&SD1,'<');
-    input_queue_t *iq = epc->out_state->mode.queue.rxqueue;
+//    sdPut(&SD1,'<');
+    input_queue_t *iq = osp->mode.queue.rxqueue;
     size_t i;
     for(i=0;i<n;i++)
     {
@@ -225,20 +225,17 @@ void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
   else
   {
 //     sdPut(&SD1,'y');
-//     chprintf((BaseSequentialStream *)&SD1,"tx%d/%d",n,epc->in_maxsize);
-//    chprintf((BaseSequentialStream *)&SD1," %d in%d out%d", n, epc->in_state->data_bank, epc->out_state->data_bank);
     /* Copy from _usbb[] to buf  */
     size_t i=0;
     for(i=0;i<n;i++)
-      isp->mode.linear.rxbuf[i] = bd->addr[i];
-
+      osp->mode.linear.rxbuf[i] = bd->addr[i];
   }
 
   // Update the Buffer status
-  bd->desc = BDT_DESC(n, epc->out_state->data_bank);
-  // Toggle the odd and data bits for next RX
-  epc->out_state->data_bank ^= DATA1;
-  epc->out_state->odd_even ^= ODD;
+  epc->out_state->data_bank ^= DATA1;//(bd->desc & 8) ? DATA1 : DATA0;
+//  sdPut(&SD1,'.');
+//  sdPut(&SD1,'0'+epc->out_state->data_bank);
+  bd->desc = BDT_DESC(epc->out_maxsize, epc->out_state->data_bank);
 }
 
 /*===========================================================================*/
@@ -266,7 +263,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   while(istat & USBx_ISTAT_TOKDNE) {
 //     sdPut(&SD1,'b');
     uint8_t stat = USBOTG->STAT;
-    uint8_t ep = stat >>4;
+    uint8_t ep = stat >> 4;
     if(ep > USB_MAX_ENDPOINTS) {
       sdPut(&SD1,'=');
       return;
@@ -282,16 +279,16 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
     // Update the ODD/EVEN state for the correct Enpoint state (RX/TX)
     if(tx_rx == RX)
       epc->out_state->odd_even = odd_even;
-//     else
-//       epc->in_state->odd_even = odd_even;
+
 //    sdPut(&SD1,'0'+ep);
     switch(BDT_TOK_PID(bd->desc))
     {
-      case BDT_PID_SETUP:                                           // SETUP
+      case BDT_PID_SETUP:                                              // SETUP
+      {
 //             sdPut(&SD1,',');
         if(tx_rx == RX)
           bd->desc = BDT_DESC(epc->out_maxsize,DATA1);
-          else
+        else
           sdPut(&SD1,'(');
         // Clear any pending IN stuff
         _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
@@ -300,8 +297,9 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         // Call SETUP function (ChibiOS core), which sends back stuff
         _usb_isr_invoke_setup_cb(usbp, ep);
 
-        break;
+      } break;
       case BDT_PID_IN:                                                 // IN
+      {
         // Special case for SetAddress for EP0
         if(ep == 0 && *(uint16_t*)usbp->setup == 0x0500)
         {
@@ -316,42 +314,29 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
 //          sdPut(&SD1,';');
           uint16_t txed = BDT_BC(bd->desc);
           epc->in_state->txcnt += txed;
-//          chprintf((BaseSequentialStream *)&SD1,"txed%d/%d",epc->in_state->txcnt,epc->in_state->txsize);
-          if(txed)
+          if(epc->in_state->txcnt < epc->in_state->txsize)
           {
-            if(epc->in_state->txcnt < epc->in_state->txsize)
-            {
 //              sdPut(&SD1,'+');
-              if (!epc->in_state->txqueued)
-              {
-                epc->in_state->mode.linear.txbuf += txed;
-                if(ep == 0)
-                  usbp->ep0n -= txed;
-              }
-              usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
-            }
-            else
-            {
-              _usb_isr_invoke_in_cb(usbp,ep);
-            }
-  //          chprintf((BaseSequentialStream *)&SD1,"%d %d",usbp->ep0n,);
+            if (!epc->in_state->txqueued)
+              epc->in_state->mode.linear.txbuf += txed;
+            usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
           }
+          else
+            _usb_isr_invoke_in_cb(usbp,ep);
         }
-        break;
-      case BDT_PID_OUT:                                               // OUT
+      } break;
+      case BDT_PID_OUT:                                                // OUT
       {
 //        sdPut(&SD1,':');
-        if(ep > 0)
-        {
-          uint16_t rxed = BDT_BC(bd->desc);
-          epc->out_state->rxcnt += rxed;
+        uint16_t rxed = BDT_BC(bd->desc);
 
-          usb_packet_receive(usbp,ep,rxed);
+        usb_packet_receive(usbp,ep,rxed);
+        if(rxed)
+        {
           if(!epc->out_state->rxqueued)
-          {
             epc->out_state->mode.linear.rxbuf += rxed;
-          }
-          /* Update transactiob data */
+
+          /* Update transaction data */
           epc->out_state->rxcnt              += rxed;
           epc->out_state->rxsize             -= rxed;
           epc->out_state->rxpkts             -= 1;
@@ -359,16 +344,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           /* The transaction is completed if the specified number of packets
              has been received or the current packet is a short packet.*/
           if ((rxed < epc->out_maxsize) || (epc->out_state->rxpkts == 0))
-          {
-            /* Transfer complete, invokes the callback.*/
             _usb_isr_invoke_out_cb(usbp, ep);
-          }
-        }
-        else
-        {
-          // Switch to the other buffer
-          usbp->epc[ep]->out_state->data_bank ^= DATA1;
-          bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
         }
       } break;
       case BDT_PID_SOF:
@@ -378,8 +354,8 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         sdPut(&SD1,'$');
         break;
     }
-    USBOTG->CTL = USBx_CTL_USBENSOFEN;
     USBOTG->ISTAT = USBx_ISTAT_TOKDNE;
+    USBOTG->CTL = USBx_CTL_USBENSOFEN;
     istat = USBOTG->ISTAT;
   }
   /* 01 - Bit0 - Valid USB Reset received */
@@ -566,13 +542,11 @@ void usb_lld_set_address(USBDriver *usbp) {
 void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
 //   sdPut(&SD1,'h');
 
-  /* FIXME: Might only work for EP0 as-is */
   const USBEndpointConfig *epc = usbp->epc[ep];
   uint8_t mask=0;
 
   if(epc->out_state != NULL)
   {
-
     /* OUT Endpoint */
     epc->out_state->odd_even = EVEN;
     epc->out_state->data_bank = DATA0;
@@ -685,7 +659,6 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
   // Switch to the other buffer
   usbp->epc[ep]->out_state->data_bank ^= DATA1;
   bd->desc = BDT_DESC(usbp->epc[ep]->out_maxsize,usbp->epc[ep]->out_state->data_bank);
-
 }
 
 /**
