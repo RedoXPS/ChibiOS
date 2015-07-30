@@ -1,5 +1,5 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006-2014 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,17 +18,16 @@
 #include "chprintf.h"
 
 /*
- * Endpoints to be used for USBD2.
+ * Endpoints to be used for USBD1.
  */
-#define USBD2_DATA_REQUEST_EP           1
-#define USBD2_DATA_AVAILABLE_EP         1
-#define USBD2_INTERRUPT_REQUEST_EP      2
+#define USBD1_DATA_REQUEST_EP           1
+#define USBD1_DATA_AVAILABLE_EP         1
+#define USBD1_INTERRUPT_REQUEST_EP      2
 
 /*
  * Serial over USB Driver structure.
  */
 static SerialUSBDriver SDU1;
-
 
 /*
  * USB Device Descriptor.
@@ -42,9 +41,9 @@ static uint8_t vcom_device_descriptor_data[18] = {
                          0x0179,        /* idVendor.                        */
                          0x0001,        /* idProduct.                       */
                          0x0200,        /* bcdDevice.                       */
-                         0,             /* iManufacturer.                   */
-                         0,             /* iProduct.                        */
-                         0,             /* iSerialNumber.                   */
+                         1,             /* iManufacturer.                   */
+                         2,             /* iProduct.                        */
+                         3,             /* iSerialNumber.                   */
                          1)             /* bNumConfigurations.              */
 };
 
@@ -106,7 +105,7 @@ static const uint8_t vcom_configuration_descriptor_data[67] = {
   USB_DESC_BYTE         (0x01),         /* bSlaveInterface0 (Data Class
                                            Interface).                      */
   /* Endpoint 2 Descriptor.*/
-  USB_DESC_ENDPOINT     (USBD2_INTERRUPT_REQUEST_EP|0x80,
+  USB_DESC_ENDPOINT     (USBD1_INTERRUPT_REQUEST_EP|0x80,
                          0x03,          /* bmAttributes (Interrupt).        */
                          0x0008,        /* wMaxPacketSize.                  */
                          0xFF),         /* bInterval.                       */
@@ -122,12 +121,12 @@ static const uint8_t vcom_configuration_descriptor_data[67] = {
                                            4.7).                            */
                          0x00),         /* iInterface.                      */
   /* Endpoint 3 Descriptor.*/
-  USB_DESC_ENDPOINT     (USBD2_DATA_AVAILABLE_EP,       /* bEndpointAddress.*/
+  USB_DESC_ENDPOINT     (USBD1_DATA_AVAILABLE_EP,       /* bEndpointAddress.*/
                          0x02,          /* bmAttributes (Bulk).             */
                          0x0040,        /* wMaxPacketSize.                  */
                          0x00),         /* bInterval.                       */
   /* Endpoint 1 Descriptor.*/
-  USB_DESC_ENDPOINT     (USBD2_DATA_REQUEST_EP|0x80,    /* bEndpointAddress.*/
+  USB_DESC_ENDPOINT     (USBD1_DATA_REQUEST_EP|0x80,    /* bEndpointAddress.*/
                          0x02,          /* bmAttributes (Bulk).             */
                          0x0040,        /* wMaxPacketSize.                  */
                          0x00)          /* bInterval.                       */
@@ -224,7 +223,6 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
   return NULL;
 }
 
-
 /**
  * @brief   IN EP1 state.
  */
@@ -272,7 +270,6 @@ static const USBEndpointConfig ep2config = {
   NULL
 };
 
-
 /*
  * Handles the USB driver global events.
  */
@@ -294,8 +291,8 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     /* Enables the endpoints specified into the configuration.
        Note, this callback is invoked from an ISR so I-Class functions
        must be used.*/
-    usbInitEndpointI(usbp, USBD2_DATA_REQUEST_EP, &ep1config);
-    usbInitEndpointI(usbp, USBD2_INTERRUPT_REQUEST_EP, &ep2config);
+    usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &ep1config);
+    usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &ep2config);
 
     /* Resetting the state of the CDC subsystem.*/
     sduConfigureHookI(&SDU1);
@@ -330,14 +327,15 @@ static const USBConfig usbcfg = {
  */
 static const SerialUSBConfig serusbcfg = {
   &USBD1,
-  USBD2_DATA_REQUEST_EP,
-  USBD2_DATA_AVAILABLE_EP,
-  USBD2_INTERRUPT_REQUEST_EP
+  USBD1_DATA_REQUEST_EP,
+  USBD1_DATA_AVAILABLE_EP,
+  USBD1_INTERRUPT_REQUEST_EP
 };
 
 SerialConfig s0cfg = {
   115200
 };
+
 /*
  * Shell stuff
  */
