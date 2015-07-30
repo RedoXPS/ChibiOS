@@ -284,7 +284,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       epc->out_state->odd_even = odd_even;
 //     else
 //       epc->in_state->odd_even = odd_even;
-    sdPut(&SD1,'0'+ep);
+//    sdPut(&SD1,'0'+ep);
     switch(BDT_TOK_PID(bd->desc))
     {
       case BDT_PID_SETUP:                                           // SETUP
