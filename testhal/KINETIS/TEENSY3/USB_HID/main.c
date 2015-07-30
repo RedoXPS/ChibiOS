@@ -257,12 +257,15 @@ static const USBDescriptor *get_hid_descriptor(USBDriver *usbp,
   (void)usbp;
   (void)dindex;
   switch (dtype) {
-    case 0x22:
-      sdPut(&SD1,'G');
-      sdPut(&SD1,'0'+diface);
+    case 0x22:      // REPORT
+//      sdPut(&SD1,'G');
+//      sdPut(&SD1,'0'+diface);
       if (diface < 3)
         return &hid_descriptors[diface];
       break;
+    case 0x21:      // HID
+    case 0x23:      // Physical descriptor
+
     default:
       sdPut(&SD1,'H');
       break;
@@ -354,7 +357,7 @@ static const USBEndpointConfig ep3config = {
  */
 static void usb_event(USBDriver *usbp, usbevent_t event) {
 //  (void)usbp;
-  sdPut(&SD1,' ');
+//  sdPut(&SD1,' ');
   switch (event) {
   case USB_EVENT_RESET:
     sdPut(&SD1,'\n');
@@ -404,35 +407,33 @@ bool hidHandlerHookCB(USBDriver *usbp)
   //chprintf((BaseSequentialStream *)&SD1,"Unk%X",*(uint16_t*)usbp->setup);
   switch(*(uint16_t*)usbp->setup)
   {
-    case 0x0A21: /* HID SET_IDLE */
-      sdPut(&SD1,'M');
+    case 0x0A21: /* HID SET_IDLE - HID1_11.pdf p52, 7.2.4 */
+//      sdPut(&SD1,'M');
       usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
       return true;
-    case 0x0681: /* HID GET_DESCRIPTOR */ // FIXME, check correctness
+    case 0x0681: /* HID GET_DESCRIPTOR - HID1_11.pdf p49, 7.1.1 */
     {
-      sdPut(&SD1,'N');
+//      sdPut(&SD1,'N');
       const USBDescriptor *dp = get_hid_descriptor(usbp,
-                                                    usbp->setup[3], // Type
-                                                    usbp->setup[2], // Index
-                                                    usbFetchWord(&usbp->setup[4])); // Interface number
+                                    usbp->setup[3], // Type
+                                    usbp->setup[2], // Index
+                                    usbFetchWord(&usbp->setup[4])); // Interface
       if (dp == NULL)
-        return FALSE;
+        return false;
       usbSetupTransfer(usbp, (uint8_t *)dp->ud_string, dp->ud_size, NULL);
       return true;
-      break;
-    }
-    case 0x01A1:  /* HID GET_REPORT */
-      sdPut(&SD1,'P');
+    } break;
+    case 0x01A1:  /* HID GET_REPORT - HID1_11.pdf p51, 7.2.1 */
+    {
+//      sdPut(&SD1,'P');
       /* FIXME this gets rid of the timeouts,
        *       but it's probably not the right way of doing things
        */
       uint8_t zero = 0;
       usbSetupTransfer(usbp, &zero, 1, NULL);
       return true;
-//      usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
-      return true;
-//      return false;
-    case 0x0921:   /* HID SET_REPORT */
+    } break;
+    case 0x0921:   /* HID SET_REPORT - HID1_11.pdf p52, 7.2.2 */
       sdPut(&SD1,'Q');
 //      usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
       return true;
