@@ -281,14 +281,14 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 //  sdPut(&SD1,' ');
   switch (event) {
   case USB_EVENT_RESET:
-    sdPut(&SD1,'\n');
-    sdPut(&SD1,'\r');
+//    sdPut(&SD1,'\n');
+//    sdPut(&SD1,'\r');
     return;
   case USB_EVENT_ADDRESS:
 //    sdPut(&SD1,'V');
     return;
   case USB_EVENT_CONFIGURED:
-    sdPut(&SD1,'W');
+//    sdPut(&SD1,'W');
     chSysLockFromISR();
 
     /* Enables the endpoints specified into the configuration.
