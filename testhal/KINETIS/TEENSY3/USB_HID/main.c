@@ -250,6 +250,9 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
     case USB_DESCRIPTOR_INTERFACE_ASSOCIATION:
       sdPut(&SD1,'I');
       break;
+    case USB_REQ_GET_INTERFACE:
+      sdPut(&SD1,'R');
+      break;
     default:
       sdPut(&SD1,'J');
       chprintf((BaseSequentialStream *)&SD1,"?t%Xi%d",dtype,dindex);
@@ -416,7 +419,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
  */
 bool hidHandlerHookCB(USBDriver *usbp)
 {
-  //chprintf((BaseSequentialStream *)&SD1,"Unk%X",*(uint16_t*)usbp->setup);
+//  chprintf((BaseSequentialStream *)&SD1,"=%X",*(uint16_t*)usbp->setup);
   switch(*(uint16_t*)usbp->setup)
   {
     case 0x0A21: /* HID SET_IDLE - HID1_11.pdf p52, 7.2.4 */
