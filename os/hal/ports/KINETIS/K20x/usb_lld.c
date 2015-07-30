@@ -647,7 +647,7 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
   for (n = 0; n < 8; n++) {
     buf[n] = bd->addr[n];
   }
-  /* Release the other buffer */
+  /* Release the buffer */
   os->data_bank ^= DATA1;
   bd->desc = BDT_DESC(usbp->epc[ep]->out_maxsize,os->data_bank);
 }
