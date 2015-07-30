@@ -134,7 +134,7 @@ static volatile uint8_t _usbbn=0;
 uint8_t* usb_alloc(uint8_t size)
 {
   (void)size;
-  if(_usbbn < USB_MAX_ENDPOINTS)
+  if(_usbbn < (USB_MAX_ENDPOINTS+1)*4)
     return _usbb[_usbbn++];
   sdPut(&SD1,'z');
   while(1); /* Should not happen, ever */
@@ -155,7 +155,25 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
     n = (size_t)epc->in_maxsize;
 
   if (isp->txqueued)
-    sdPut(&SD1,'x');
+  {
+    sdPut(&SD1,'>');
+    output_queue_t *oq = epc->in_state->mode.queue.txqueue;
+    size_t i;
+    for(i=0;i<n;i++)
+    {
+      bd->addr[i] = *oq->q_rdptr++;
+      if (oq->q_rdptr >= oq->q_top)
+          oq->q_rdptr = oq->q_buffer;
+    }
+
+    /* Updating queue.*/
+    syssts_t sts = osalSysGetStatusAndLockX();
+
+    oq->q_counter += n;
+    osalThreadDequeueAllI(&oq->q_waiting, Q_OK);
+
+    osalSysRestoreStatusX(sts);
+  }
   else
   {
 //     sdPut(&SD1,'y');
@@ -187,7 +205,23 @@ void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
     n = (size_t)epc->out_maxsize;
 
   if (isp->rxqueued)
-    sdPut(&SD1,'x');
+  {
+    sdPut(&SD1,'<');
+    input_queue_t *iq = epc->out_state->mode.queue.rxqueue;
+    size_t i;
+    for(i=0;i<n;i++)
+    {
+      *iq->q_wrptr++ = bd->addr[i];
+      if (iq->q_wrptr >= iq->q_top)
+        iq->q_wrptr = iq->q_buffer;
+    }
+
+    /* Updating queue.*/
+    osalSysLockFromISR();
+    iq->q_counter += n;
+    osalThreadDequeueAllI(&iq->q_waiting, Q_OK);
+    osalSysUnlockFromISR();
+  }
   else
   {
 //     sdPut(&SD1,'y');
@@ -250,7 +284,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       epc->out_state->odd_even = odd_even;
 //     else
 //       epc->in_state->odd_even = odd_even;
-//    sdPut(&SD1,'0'+ep);
+    sdPut(&SD1,'0'+ep);
     switch(BDT_TOK_PID(bd->desc))
     {
       case BDT_PID_SETUP:                                           // SETUP
@@ -533,32 +567,44 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
 //   sdPut(&SD1,'h');
 
   /* FIXME: Might only work for EP0 as-is */
-
   const USBEndpointConfig *epc = usbp->epc[ep];
-  /* OUT Endpoint */
-  epc->out_state->odd_even = EVEN;
-//   epc->out_state->data_bank = DATA0;
-  /* RXe */
-  _bdt[BDT_INDEX(ep, RX, EVEN)].desc = BDT_DESC(epc->out_maxsize, DATA0);
-  _bdt[BDT_INDEX(ep, RX, EVEN)].addr = usb_alloc(epc->out_maxsize);
-  /* RXo */
-  _bdt[BDT_INDEX(ep, RX,  ODD)].desc = BDT_DESC(epc->out_maxsize, DATA0);
-  _bdt[BDT_INDEX(ep, RX,  ODD)].addr = usb_alloc(epc->out_maxsize);
+  uint8_t mask=0;
 
-  /* IN Endpoint */
-  epc->in_state->odd_even = EVEN;
-//   epc->in_state->data_bank = DATA0;
-  /* TXe, not used yet */
-  _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
-  _bdt[BDT_INDEX(ep, TX, EVEN)].addr = usb_alloc(epc->in_maxsize);
-  /* TXo, not used yet */
-  _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
-  _bdt[BDT_INDEX(ep, TX,  ODD)].addr = usb_alloc(epc->in_maxsize);
+  if(epc->out_state != NULL)
+  {
 
-  /* Activate endpoint */
-  USBOTG->ENDPT[ep].V = USBx_ENDPTn_EPRXEN |
-                        USBx_ENDPTn_EPTXEN |
-                        USBx_ENDPTn_EPHSHK;
+    /* OUT Endpoint */
+    epc->out_state->odd_even = EVEN;
+    epc->out_state->data_bank = DATA0;
+    /* RXe */
+    _bdt[BDT_INDEX(ep, RX, EVEN)].desc = BDT_DESC(epc->out_maxsize, DATA0);
+    _bdt[BDT_INDEX(ep, RX, EVEN)].addr = usb_alloc(epc->out_maxsize);
+    /* RXo */
+    _bdt[BDT_INDEX(ep, RX,  ODD)].desc = BDT_DESC(epc->out_maxsize, DATA0);
+    _bdt[BDT_INDEX(ep, RX,  ODD)].addr = usb_alloc(epc->out_maxsize);
+    /* Enable OUT direction */
+    mask |= USBx_ENDPTn_EPRXEN;
+  }
+  if(epc->in_state != NULL)
+  {
+    /* IN Endpoint */
+    epc->in_state->odd_even = EVEN;
+    epc->in_state->data_bank = DATA0;
+    /* TXe, not used yet */
+    _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
+    _bdt[BDT_INDEX(ep, TX, EVEN)].addr = usb_alloc(epc->in_maxsize);
+    /* TXo, not used yet */
+    _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
+    _bdt[BDT_INDEX(ep, TX,  ODD)].addr = usb_alloc(epc->in_maxsize);
+    /* Enable IN direction */
+    mask |= USBx_ENDPTn_EPTXEN;
+  }
+
+  /* EPHSHK should be set for CTRL, BULK, INTR not for ISOC*/
+  if((epc->ep_mode & USB_EP_MODE_TYPE) != USB_EP_MODE_TYPE_ISOC)
+    mask |= USBx_ENDPTn_EPHSHK;
+
+  USBOTG->ENDPT[ep].V = mask;
 }
 
 /**
