@@ -14,6 +14,7 @@
     limitations under the License.
 */
 #include "hal.h"
+#include "shell.h"
 #include "chprintf.h"
 
 /*
@@ -26,7 +27,7 @@
 /*
  * Serial over USB Driver structure.
  */
-static SerialUSBDriver SDU2;
+static SerialUSBDriver SDU1;
 
 
 /*
@@ -201,13 +202,13 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 //  chprintf((BaseSequentialStream *)&SD1,"t%Xi%d",dtype,dindex);
   switch (dtype) {
     case USB_DESCRIPTOR_DEVICE:
-      sdPut(&SD1,'A');
+//      sdPut(&SD1,'A');
       return &vcom_device_descriptor;
     case USB_DESCRIPTOR_CONFIGURATION:
-      sdPut(&SD1,'B');
+//      sdPut(&SD1,'B');
       return &vcom_configuration_descriptor;
     case USB_DESCRIPTOR_STRING:
-      sdPut(&SD1,'C');
+//      sdPut(&SD1,'C');
       if (dindex < 4)
         return &vcom_strings[dindex];
     case USB_DESCRIPTOR_INTERFACE:
@@ -277,7 +278,7 @@ static const USBEndpointConfig ep2config = {
  */
 static void usb_event(USBDriver *usbp, usbevent_t event) {
 //  (void)usbp;
-  sdPut(&SD1,' ');
+//  sdPut(&SD1,' ');
   switch (event) {
   case USB_EVENT_RESET:
     sdPut(&SD1,'\n');
@@ -293,11 +294,11 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     /* Enables the endpoints specified into the configuration.
        Note, this callback is invoked from an ISR so I-Class functions
        must be used.*/
-//    usbInitEndpointI(usbp, USBD2_DATA_REQUEST_EP, &ep1config);
-//    usbInitEndpointI(usbp, USBD2_INTERRUPT_REQUEST_EP, &ep2config);
+    usbInitEndpointI(usbp, USBD2_DATA_REQUEST_EP, &ep1config);
+    usbInitEndpointI(usbp, USBD2_INTERRUPT_REQUEST_EP, &ep2config);
 
     /* Resetting the state of the CDC subsystem.*/
-//    sduConfigureHookI(&SDU2);
+    sduConfigureHookI(&SDU1);
 
     chSysUnlockFromISR();
     return;
@@ -337,12 +338,40 @@ static const SerialUSBConfig serusbcfg = {
 SerialConfig s0cfg = {
   115200
 };
+/*
+ * Shell stuff
+ */
+#define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(512)
+
+static void cmd_mem(BaseSequentialStream *chp, int argc, char *argv[]) {
+  size_t n, size;
+
+  (void)argv;
+  if (argc > 0) {
+    chprintf(chp, "Usage: mem\r\n");
+    return;
+  }
+  n = chHeapStatus(NULL, &size);
+  chprintf(chp, "core free memory : %u bytes\r\n", chCoreGetStatusX());
+  chprintf(chp, "heap fragments   : %u\r\n", n);
+  chprintf(chp, "heap free total  : %u bytes\r\n", size);
+}
+
+static const ShellCommand commands[] = {
+  {"mem", cmd_mem},
+  {NULL, NULL}
+};
+
+static const ShellConfig shell_cfg1 = {
+  (BaseSequentialStream *)&SDU1,
+  commands
+};
 
 /*
  * Application entry point.
  */
 int main(void) {
-
+  thread_t *shelltp = NULL;
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -358,8 +387,8 @@ int main(void) {
   /*
    * Initializes a serial-over-USB CDC driver.
    */
-  sduObjectInit(&SDU2);
-  sduStart(&SDU2, &serusbcfg);
+  sduObjectInit(&SDU1);
+  sduStart(&SDU1, &serusbcfg);
 
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
@@ -367,14 +396,26 @@ int main(void) {
    * after a reset.
    */
 
-  usbDisconnectBus(&USBD1);
+  usbDisconnectBus(serusbcfg.usbp);
   chThdSleepMilliseconds(1000);
-  usbStart(&USBD1, &usbcfg);
-  usbConnectBus(&USBD1);
+  usbStart(serusbcfg.usbp, &usbcfg);
+  usbConnectBus(serusbcfg.usbp);
+
+  /*
+   * Shell manager initialization.
+   */
+  shellInit();
 
   while (!chThdShouldTerminateX()) {
+     if (!shelltp && (serusbcfg.usbp->state == USB_ACTIVE))
+      shelltp = shellCreate(&shell_cfg1, SHELL_WA_SIZE, NORMALPRIO);
+    else if (chThdTerminatedX(shelltp)) {
+      chThdRelease(shelltp);    /* Recovers memory of the previous shell.   */
+      shelltp = NULL;           /* Triggers spawning of a new shell.        */
+    }
     chThdSleepMilliseconds(1000);
     palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
+//    sdPut(&SDU1,'B');
   }
 
   return 0;
