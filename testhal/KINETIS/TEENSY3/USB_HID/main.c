@@ -27,9 +27,9 @@ static uint8_t vcom_device_descriptor_data[18] = {
                          0x16c0,        /* idVendor.                        */
                          0x0479,        /* idProduct.                       */
                          0x0200,        /* bcdDevice.                       */
-                         0,             /* iManufacturer.                   */
-                         0,             /* iProduct.                        */
-                         0,             /* iSerialNumber.                   */
+                         1,             /* iManufacturer.                   */
+                         2,             /* iProduct.                        */
+                         3,             /* iSerialNumber.                   */
                          1)             /* bNumConfigurations.              */
 };
 
@@ -224,13 +224,13 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 //  chprintf((BaseSequentialStream *)&SD1,"t%Xi%d",dtype,dindex);
   switch (dtype) {
     case USB_DESCRIPTOR_DEVICE:
-      sdPut(&SD1,'A');
+//      sdPut(&SD1,'A');
       return &vcom_device_descriptor;
     case USB_DESCRIPTOR_CONFIGURATION:
-      sdPut(&SD1,'B');
+//      sdPut(&SD1,'B');
       return &vcom_configuration_descriptor;
     case USB_DESCRIPTOR_STRING:
-      sdPut(&SD1,'C');
+//      sdPut(&SD1,'C');
       if (dindex < 4)
         return &vcom_strings[dindex];
     case USB_DESCRIPTOR_INTERFACE:
@@ -253,18 +253,18 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
 static const USBDescriptor *get_hid_descriptor(USBDriver *usbp,
                                            uint8_t dtype,
                                            uint8_t dindex,
-                                           uint16_t lang) {
+                                           uint16_t diface) {
   (void)usbp;
-  (void)lang;
+  (void)dindex;
   switch (dtype) {
     case 0x22:
-      sdPut(&SD1,'D');
-      sdPut(&SD1,'0'+dindex);
-      if (dindex < 3)
-        return &hid_descriptors[dindex];
+      sdPut(&SD1,'G');
+      sdPut(&SD1,'0'+diface);
+      if (diface < 3)
+        return &hid_descriptors[diface];
       break;
     default:
-      sdPut(&SD1,'F');
+      sdPut(&SD1,'H');
       break;
   }
   return NULL;
@@ -410,19 +410,26 @@ bool hidHandlerHookCB(USBDriver *usbp)
       return true;
     case 0x0681: /* HID GET_DESCRIPTOR */ // FIXME, check correctness
     {
-//      sdPut(&SD1,'N');
+      sdPut(&SD1,'N');
       const USBDescriptor *dp = get_hid_descriptor(usbp,
                                                     usbp->setup[3], // Type
-                                                    usbp->setup[4], // Index
-                                                    0);
+                                                    usbp->setup[2], // Index
+                                                    usbFetchWord(&usbp->setup[4])); // Interface number
       if (dp == NULL)
         return FALSE;
       usbSetupTransfer(usbp, (uint8_t *)dp->ud_string, dp->ud_size, NULL);
       return true;
+      break;
     }
     case 0x01A1:  /* HID GET_REPORT */
       sdPut(&SD1,'P');
-      usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
+      /* FIXME this gets rid of the timeouts,
+       *       but it's probably not the right way of doing things
+       */
+      uint8_t zero = 0;
+      usbSetupTransfer(usbp, &zero, 1, NULL);
+      return true;
+//      usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
       return true;
 //      return false;
     case 0x0921:   /* HID SET_REPORT */
