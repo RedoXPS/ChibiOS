@@ -153,6 +153,7 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
 
   if (n > (size_t)epc->in_maxsize)
     n = (size_t)epc->in_maxsize;
+
 //  sdPut(&SD1,'0'+ep);
 //  chprintf((BaseSequentialStream *)&SD1,"tx%d/%d in%d out%d",n,epc->in_maxsize, epc->in_state->data_bank, epc->out_state->data_bank);
   if (isp->txqueued)
@@ -276,7 +277,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
 
     bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep,tx_rx,odd_even)];
 
-    // Update the ODD/EVEN state for the correct Enpoint state (RX/TX)
+    // Update the ODD/EVEN state for RX
     if(tx_rx == RX)
       epc->out_state->odd_even = odd_even;
 
@@ -286,22 +287,20 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       case BDT_PID_SETUP:                                              // SETUP
       {
 //             sdPut(&SD1,',');
-        if(tx_rx == RX)
-          bd->desc = BDT_DESC(epc->out_maxsize,DATA1);
-        else
-          sdPut(&SD1,'(');
         // Clear any pending IN stuff
         _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
         _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
         usbp->epc[ep]->in_state->data_bank = DATA1;
+
         // Call SETUP function (ChibiOS core), which sends back stuff
         _usb_isr_invoke_setup_cb(usbp, ep);
-
+        // Release Buffer
+        bd->desc = BDT_DESC(epc->out_maxsize,DATA1);
       } break;
       case BDT_PID_IN:                                                 // IN
       {
         // Special case for SetAddress for EP0
-        if(ep == 0 && *(uint16_t*)usbp->setup == 0x0500)
+        if(ep == 0 && usbFetchWord(usbp->setup) == 0x0500)
         {
 //          sdPut(&SD1,'_');
           usbp->address = usbp->setup[2];
@@ -309,7 +308,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           _usb_isr_invoke_event_cb(usbp, USB_EVENT_ADDRESS);
           usbp->state = USB_SELECTED;
         }
-        else
+//        else
         {
 //          sdPut(&SD1,';');
           uint16_t txed = BDT_BC(bd->desc);
@@ -380,7 +379,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   }
   /* 10 - Bit4 - Constant IDLE on USB bus detected */
   if(istat & USBx_ISTAT_SLEEP) {
-    sdPut(&SD1,'f');
+//    sdPut(&SD1,'f');
     USBOTG->ISTAT = USBx_ISTAT_SLEEP;
   }
   /* 20 - Bit5 and 40 - 6 are not used */
@@ -415,7 +414,7 @@ void usb_lld_start(USBDriver *usbp) {
     /* Clock activation.*/
 #if KINETIS_USB_USE_USB0
     if (&USBD1 == usbp) {
-      chprintf((BaseSequentialStream *)&SD1,"uStart\r\n");
+//      chprintf((BaseSequentialStream *)&SD1,"uStart\r\n");
 
       /* Clear BDT */
       uint8_t i;
@@ -425,38 +424,36 @@ void usb_lld_start(USBDriver *usbp) {
       }
 
       SIM->SCGC4 |= SIM_SCGC4_USBOTG;  /* Enable Clock */
-      /* Reset USB module */
-      USBOTG->USBTRC0 = USBx_USBTRC0_USBRESET;
-      while ((USBOTG->USBTRC0 & USBx_USBTRC0_USBRESET) != 0) ; // wait for reset to end
 
-      // set desc table base addr
+      /* Reset USB module, wait for completion */
+      USBOTG->USBTRC0 = USBx_USBTRC0_USBRESET;
+      while ((USBOTG->USBTRC0 & USBx_USBTRC0_USBRESET));
+
+      /* Set BDT Address */
       USBOTG->BDTPAGE1 = ((uint32_t)_bdt) >> 8;
       USBOTG->BDTPAGE2 = ((uint32_t)_bdt) >> 16;
       USBOTG->BDTPAGE3 = ((uint32_t)_bdt) >> 24;
 
-      // clear all ISR flags
+      /* Clear all ISR flags */
       USBOTG->ISTAT = 0xFF;
       USBOTG->ERRSTAT = 0xFF;
       USBOTG->OTGISTAT = 0xFF;
 
-      USBOTG->USBTRC0 |= 0x40; // undocumented bit
-
-      // Enable USB
+      /* Enable USB */
       USBOTG->CTL = USBx_CTL_ODDRST | USBx_CTL_USBENSOFEN;
       USBOTG->USBCTRL = 0;
 
-      // enable reset interrupt
+      /* Enable reset interrupt */
       USBOTG->INTEN = USBx_INTEN_USBRSTEN;
 
-      // enable interrupt in NVIC...
+      /* Enable interrupt in NVIC */
       nvicEnableVector(USB_OTG_IRQn, KINETIS_USB_USB0_IRQ_PRIORITY);
 
-      // enable d+ pullup
+      /* Enable D+ pullup */
       USBOTG->CONTROL = USBx_CONTROL_DPPULLUPNONOTG;
     }
 #endif
   }
-  /* Configuration.*/
 }
 
 /**
@@ -471,7 +468,7 @@ void usb_lld_stop(USBDriver *usbp) {
   if (usbp->state == USB_STOP) {
 #if KINETIS_USB_USE_USB0
     if (&USBD1 == usbp) {
-      chprintf((BaseSequentialStream *)&SD1,"uStop\r\n");
+//      chprintf((BaseSequentialStream *)&SD1,"uStop\r\n");
       nvicDisableVector(USB_OTG_IRQn);
     }
 #endif
@@ -650,15 +647,16 @@ usbepstatus_t usb_lld_get_status_in(USBDriver *usbp, usbep_t ep) {
 void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
 //    sdPut(&SD1,'l');
   // Get the BDT entry
-  bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep, RX, usbp->epc[ep]->out_state->odd_even)];
+  USBOutEndpointState *os = usbp->epc[ep]->out_state;
+  bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep, RX, os->odd_even)];
   // Copy the Data
   uint8_t n;
   for (n = 0; n < 8; n++) {
     buf[n] = bd->addr[n];
   }
   // Switch to the other buffer
-  usbp->epc[ep]->out_state->data_bank ^= DATA1;
-  bd->desc = BDT_DESC(usbp->epc[ep]->out_maxsize,usbp->epc[ep]->out_state->data_bank);
+  os->data_bank ^= DATA1;
+  bd->desc = BDT_DESC(usbp->epc[ep]->out_maxsize,os->data_bank);
 }
 
 /**
