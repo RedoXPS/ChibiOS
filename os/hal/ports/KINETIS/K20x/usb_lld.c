@@ -272,7 +272,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       case BDT_PID_OUT:                                               // OUT
         sdPut(&SD1,':');
         // Switch to the other buffer
-        usbp->epc[ep]->out_state->data_bank = DATA1;
+        usbp->epc[ep]->out_state->data_bank ^= DATA1;
         bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
         break;
       case BDT_PID_SOF:
