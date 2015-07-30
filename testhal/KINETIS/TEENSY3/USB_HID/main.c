@@ -113,7 +113,7 @@ static uint8_t vcom_configuration_descriptor_data[CONFIG_DESC_SIZE] = {
   USB_DESC_BYTE         (0x09),         /* bLength                          */
   USB_DESC_BYTE         (0x21),         /* bDescriptorType                  */
   USB_DESC_BCD          (0x0111),       /* bcdHID                           */
-  USB_DESC_BYTE         (0x08),         /* bCountryCode                     */
+  USB_DESC_BYTE         (0x00),         /* bCountryCode                     */
   USB_DESC_BYTE         (0x01),         /* bNumDescriptors                  */
   USB_DESC_BYTE         (0x22),         /* bDescriptorType                  */
   USB_DESC_WORD         (sizeof rawhid_desc_data), /* wDescriptorLength     */
@@ -142,7 +142,7 @@ static uint8_t vcom_configuration_descriptor_data[CONFIG_DESC_SIZE] = {
   USB_DESC_BYTE         (0x09),         /* bLength                          */
   USB_DESC_BYTE         (0x21),         /* bDescriptorType                  */
   USB_DESC_BCD          (0x0111),       /* bcdHID                           */
-  USB_DESC_BYTE         (0x08),         /* bCountryCode                     */
+  USB_DESC_BYTE         (0x00),         /* bCountryCode                     */
   USB_DESC_BYTE         (0x01),         /* bNumDescriptors                  */
   USB_DESC_BYTE         (0x22),         /* bDescriptorType                  */
   USB_DESC_WORD         (sizeof debughid_desc_data), /* wDescriptorLength   */
@@ -221,7 +221,6 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
                                            uint16_t lang) {
   (void)usbp;
   (void)lang;
-//  chprintf((BaseSequentialStream *)&SD1,"t%Xi%d",dtype,dindex);
   switch (dtype) {
     case USB_DESCRIPTOR_DEVICE:
 //      sdPut(&SD1,'A');
@@ -239,8 +238,21 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
     case USB_DESCRIPTOR_ENDPOINT:
       sdPut(&SD1,'E');
       break;
-    default:
+    case USB_DESCRIPTOR_DEVICE_QUALIFIER:
       sdPut(&SD1,'F');
+      break;
+    case USB_DESCRIPTOR_OTHER_SPEED_CFG:
+      sdPut(&SD1,'G');
+      break;
+    case USB_DESCRIPTOR_INTERFACE_POWER:
+      sdPut(&SD1,'H');
+      break;
+    case USB_DESCRIPTOR_INTERFACE_ASSOCIATION:
+      sdPut(&SD1,'I');
+      break;
+    default:
+      sdPut(&SD1,'J');
+      chprintf((BaseSequentialStream *)&SD1,"?t%Xi%d",dtype,dindex);
       break;
   }
   return NULL;
@@ -258,7 +270,7 @@ static const USBDescriptor *get_hid_descriptor(USBDriver *usbp,
   (void)dindex;
   switch (dtype) {
     case 0x22:      // REPORT
-//      sdPut(&SD1,'G');
+//      sdPut(&SD1,'K');
 //      sdPut(&SD1,'0'+diface);
       if (diface < 3)
         return &hid_descriptors[diface];
@@ -267,7 +279,7 @@ static const USBDescriptor *get_hid_descriptor(USBDriver *usbp,
     case 0x23:      // Physical descriptor
 
     default:
-      sdPut(&SD1,'H');
+      sdPut(&SD1,'L');
       break;
   }
   return NULL;
@@ -373,9 +385,9 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     /* Enables the endpoints specified into the configuration.
        Note, this callback is invoked from an ISR so I-Class functions
        must be used.*/
-//    usbInitEndpointI(usbp, RAWHID_TX_ENDPOINT, &ep1config);
-//    usbInitEndpointI(usbp, RAWHID_RX_ENDPOINT, &ep2config);
-//    usbInitEndpointI(usbp, DEBUGHID_ENDPOINT, &ep3config);
+    usbInitEndpointI(usbp, RAWHID_TX_ENDPOINT, &ep1config);
+    usbInitEndpointI(usbp, RAWHID_RX_ENDPOINT, &ep2config);
+    usbInitEndpointI(usbp, DEBUGHID_ENDPOINT, &ep3config);
 
     chSysUnlockFromISR();
     return;
