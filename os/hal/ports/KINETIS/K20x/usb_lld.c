@@ -175,6 +175,38 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
   epc->in_state->odd_even ^= ODD;
 }
 
+void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
+{
+  const USBEndpointConfig *epc = usbp->epc[ep];
+
+  bdt_t *bd = (bdt_t *)&_bdt[BDT_INDEX(ep, RX, epc->out_state->odd_even)];
+
+  USBOutEndpointState *isp = epc->out_state;
+
+  if (n > (size_t)epc->out_maxsize)
+    n = (size_t)epc->out_maxsize;
+
+  if (isp->rxqueued)
+    sdPut(&SD1,'x');
+  else
+  {
+//     sdPut(&SD1,'y');
+//     chprintf((BaseSequentialStream *)&SD1,"tx%d/%d",n,epc->in_maxsize);
+//    chprintf((BaseSequentialStream *)&SD1," %d in%d out%d", n, epc->in_state->data_bank, epc->out_state->data_bank);
+    /* Copy from _usbb[] to buf  */
+    size_t i=0;
+    for(i=0;i<n;i++)
+      isp->mode.linear.rxbuf[i] = bd->addr[i];
+
+  }
+
+  // Update the Buffer status
+  bd->desc = BDT_DESC(n, epc->out_state->data_bank);
+  // Toggle the odd and data bits for next RX
+  epc->out_state->data_bank ^= DATA1;
+  epc->out_state->odd_even ^= ODD;
+}
+
 /*===========================================================================*/
 /* Driver interrupt handlers.                                                */
 /*============================================================================*/
@@ -239,7 +271,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         // Special case for SetAddress for EP0
         if(ep == 0 && *(uint16_t*)usbp->setup == 0x0500)
         {
-          sdPut(&SD1,'_');
+//          sdPut(&SD1,'_');
           usbp->address = usbp->setup[2];
           usb_lld_set_address(usbp);
           _usb_isr_invoke_event_cb(usbp, USB_EVENT_ADDRESS);
@@ -251,30 +283,60 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           uint16_t txed = BDT_BC(bd->desc);
           epc->in_state->txcnt += txed;
 //          chprintf((BaseSequentialStream *)&SD1,"txed%d/%d",epc->in_state->txcnt,epc->in_state->txsize);
-          if(txed) {
+          if(txed)
+          {
             if(epc->in_state->txcnt < epc->in_state->txsize)
             {
-              sdPut(&SD1,'+');
+//              sdPut(&SD1,'+');
               if (!epc->in_state->txqueued)
               {
                 epc->in_state->mode.linear.txbuf += txed;
+                if(ep == 0)
+                  usbp->ep0n -= txed;
               }
               usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
             }
             else
             {
-                _usb_isr_invoke_in_cb(usbp,ep);
+              _usb_isr_invoke_in_cb(usbp,ep);
             }
   //          chprintf((BaseSequentialStream *)&SD1,"%d %d",usbp->ep0n,);
           }
         }
         break;
       case BDT_PID_OUT:                                               // OUT
-        sdPut(&SD1,':');
-        // Switch to the other buffer
-        usbp->epc[ep]->out_state->data_bank ^= DATA1;
-        bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
-        break;
+      {
+//        sdPut(&SD1,':');
+        if(ep > 0)
+        {
+          uint16_t rxed = BDT_BC(bd->desc);
+          epc->out_state->rxcnt += rxed;
+
+          usb_packet_receive(usbp,ep,rxed);
+          if(!epc->out_state->rxqueued)
+          {
+            epc->out_state->mode.linear.rxbuf += rxed;
+          }
+          /* Update transactiob data */
+          epc->out_state->rxcnt              += rxed;
+          epc->out_state->rxsize             -= rxed;
+          epc->out_state->rxpkts             -= 1;
+
+          /* The transaction is completed if the specified number of packets
+             has been received or the current packet is a short packet.*/
+          if ((rxed < epc->out_maxsize) || (epc->out_state->rxpkts == 0))
+          {
+            /* Transfer complete, invokes the callback.*/
+            _usb_isr_invoke_out_cb(usbp, ep);
+          }
+        }
+        else
+        {
+          // Switch to the other buffer
+          usbp->epc[ep]->out_state->data_bank ^= DATA1;
+          bd->desc = BDT_DESC(epc->out_maxsize,usbp->epc[ep]->out_state->data_bank);
+        }
+      } break;
       case BDT_PID_SOF:
         sdPut(&SD1,'!');
         break;
@@ -455,7 +517,7 @@ void usb_lld_reset(USBDriver *usbp) {
  */
 void usb_lld_set_address(USBDriver *usbp) {
 //   sdPut(&SD1,'g');
-  chprintf((BaseSequentialStream *)&SD1,"%d",usbp->address);
+//  chprintf((BaseSequentialStream *)&SD1,"%d",usbp->address);
   USBOTG->ADDR = usbp->address&0x7F;
 }
 
@@ -590,7 +652,7 @@ void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf) {
  */
 void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
   USBOutEndpointState *osp = usbp->epc[ep]->out_state;
-  sdPut(&SD1,'m');
+//  sdPut(&SD1,'m');
   /* Transfer initialization.*/
   if (osp->rxsize == 0)         /* Special case for zero sized packets.*/
     osp->rxpkts = 1;
@@ -609,12 +671,7 @@ void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep) {
  */
 
 void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
-
 //   sdPut(&SD1,'n');
-//  const USBEndpointConfig *epc = usbp->epc[ep];
-
-//  bdt_t *bd = (bdt_t *)&_bdt[BDT_INDEX(ep, TX, epc->in_state->odd_even)];
-
   /* Transfer initialization.*/
   usb_packet_transmit(usbp,ep,usbp->epc[ep]->in_state->txsize);
 }
@@ -630,8 +687,7 @@ void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep) {
 void usb_lld_start_out(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-  sdPut(&SD1,'o');
-
+//  sdPut(&SD1,'o');
 }
 
 /**
