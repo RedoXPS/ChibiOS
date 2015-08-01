@@ -203,17 +203,13 @@ void k20x_clock_init(void) {
                  SIM_CLKDIV1_OUTDIV2(KINETIS_CLKDIV1_OUTDIV2-1) |
                  SIM_CLKDIV1_OUTDIV4(KINETIS_CLKDIV1_OUTDIV4-1);
   SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(0);
+  SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL;
 
   /* Switch to PLL as clock source */
   MCG->C1 = MCG_C1_CLKS(0);
 
   /* Wait for PLL clock to be used */
   while ((MCG->S & MCG_S_CLKST_MASK) != MCG_S_CLKST_PLL);
-
-  /* Use PLL instead of FLL, USB use PLL */
-  SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL | SIM_SOPT2_USBSRC;
-  /* FIXME: Force-configure USB for 48 MHz clock */
-  SIM->CLKDIV2 = SIM_CLKDIV2_USBFRAC | SIM_CLKDIV2_USBDIV(1);
 
   /*
    * Now in PEE mode

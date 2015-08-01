@@ -394,6 +394,22 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
 void usb_lld_init(void) {
   /* Driver initialization.*/
   usbObjectInit(&USBD1);
+
+  #if KINETIS_USB_USE_USB0
+  SIM->SOPT2 |= SIM_SOPT2_USBSRC;
+  #define KINETIS_USBCLK_FREQUENCY 48000000UL
+  uint8_t i,j;
+  for(i = 0; i < 2; i++)
+  {
+    for(j=0; j < 8; j++)
+    {
+      if((KINETIS_PLLCLK_FREQUENCY * ((i+1)/(j+1))) == KINETIS_USBCLK_FREQUENCY)
+        SIM->CLKDIV2 = i | SIM_CLKDIV2_USBDIV(j);
+        break;
+    }
+  }
+  chDbgAssert(i<2 && j <8,"USB Init error");
+  #endif
 }
 
 /**
