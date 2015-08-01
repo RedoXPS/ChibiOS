@@ -273,7 +273,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
     bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep,tx_rx,odd_even)];
 
     /* Update the ODD/EVEN state for RX */
-    if(tx_rx == RX)
+    if(tx_rx == RX && epc->out_state != NULL)
       epc->out_state->odd_even = odd_even;
 
 //    sdPut(&SD1,'0'+ep);
@@ -296,6 +296,8 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
       } break;
       case BDT_PID_IN:                                                 // IN
       {
+        if(epc->in_state == NULL)
+          break;
         /* Special case for SetAddress for EP0 */
         if(ep == 0 && usbFetchWord(usbp->setup) == 0x0500)
         {
@@ -316,10 +318,13 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           usb_packet_transmit(usbp,ep,epc->in_state->txsize - epc->in_state->txcnt);
         }
         else
+          if(epc->in_cb != NULL)
           _usb_isr_invoke_in_cb(usbp,ep);
       } break;
       case BDT_PID_OUT:                                                // OUT
       {
+        if(epc->out_state == NULL)
+          break;
 //        sdPut(&SD1,':');
         uint16_t rxed = BDT_BC(bd->desc);
 
@@ -337,7 +342,8 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
           /* The transaction is completed if the specified number of packets
              has been received or the current packet is a short packet.*/
           if ((rxed < epc->out_maxsize) || (epc->out_state->rxpkts == 0))
-            _usb_isr_invoke_out_cb(usbp, ep);
+            if(epc->out_cb != NULL)
+              _usb_isr_invoke_out_cb(usbp, ep);
         }
       } break;
       case BDT_PID_SOF:
@@ -361,7 +367,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
   }
   /* 80 - Bit7 - STALL handshake received */
   if(istat & USBx_ISTAT_STALL) {
-    sdPut(&SD1,'d');
+//    sdPut(&SD1,'d');
     USBOTG->ISTAT = USBx_ISTAT_STALL;
   }
   /* 02 - Bit1 - ERRSTAT condition triggered */
