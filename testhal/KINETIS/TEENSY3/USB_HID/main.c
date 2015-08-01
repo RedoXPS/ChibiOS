@@ -295,11 +295,9 @@ static void hidOUT(USBDriver *usbp, usbep_t ep)
   (void)usbp;
   (void)ep;
   sdPut(&SD1,'>');
-
   if(!s)
   {
-    uint8_t i;
-    usbPrepareTransmit(usbp,RAWHID_ENDPOINT,&rx_buff,RAWHID_RX_SIZE);
+    usbPrepareTransmit(usbp,RAWHID_ENDPOINT,(const uint8_t *)&rx_buff,RAWHID_RX_SIZE);
     osalSysLockFromISR();
     usbStartTransmitI(usbp, RAWHID_ENDPOINT);
     osalSysUnlockFromISR();
@@ -313,7 +311,7 @@ static void hidIN(USBDriver *usbp, usbep_t ep)
   (void)ep;
   sdPut(&SD1,'<');
   s=0;
-  usbPrepareReceive(&USBD1,RAWHID_ENDPOINT,&rx_buff,RAWHID_RX_SIZE);
+  usbPrepareReceive(&USBD1,RAWHID_ENDPOINT,(uint8_t *)&rx_buff,RAWHID_RX_SIZE);
   osalSysLockFromISR();
   usbStartReceiveI(usbp, RAWHID_ENDPOINT);
   osalSysUnlockFromISR();
@@ -362,8 +360,6 @@ static const USBEndpointConfig ep2config = {
   NULL
 };
 
-
-
 /*
  * Handles the USB driver global events.
  */
@@ -388,7 +384,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     usbInitEndpointI(usbp, RAWHID_ENDPOINT, &ep1config);
     usbInitEndpointI(usbp, DEBUGHID_ENDPOINT, &ep2config);
 
-    usbPrepareReceive(&USBD1,RAWHID_ENDPOINT,&rx_buff,RAWHID_RX_SIZE);
+    usbPrepareReceive(&USBD1,RAWHID_ENDPOINT,(uint8_t *)&rx_buff,RAWHID_RX_SIZE);
 
     chSysUnlockFromISR();
     return;
@@ -500,7 +496,7 @@ int main(void) {
     chThdSleepMilliseconds(1000);
     palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
 
-    usbPrepareTransmit(&USBD1,DEBUGHID_ENDPOINT,&buff,1);
+    usbPrepareTransmit(&USBD1,DEBUGHID_ENDPOINT,(const uint8_t *)&buff,1);
     osalSysLockFromISR();
     usbStartTransmitI(&USBD1, DEBUGHID_ENDPOINT);
     osalSysUnlockFromISR();
