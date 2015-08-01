@@ -68,7 +68,7 @@ static uint8_t rawhid_desc_data[] = {
 
 static uint8_t debughid_desc_data[] = {
   USB_DESC_BYTE(0x06), USB_DESC_WORD(DEBUGHID_USAGE_PAGE),
-  USB_DESC_BYTE(0x0A), USB_DESC_WORD(DEBUGHID_USAGE),
+  USB_DESC_BYTE(0x09), USB_DESC_WORD(DEBUGHID_USAGE),
   USB_DESC_BYTE(0xA1), USB_DESC_BYTE(0x01),    // Collection 0x01
     USB_DESC_BYTE(0x75), USB_DESC_BYTE(0x08),    // report size = 8 bits
     USB_DESC_BYTE(0x15), USB_DESC_BYTE(0x00),    // logical minimum = 0
@@ -252,6 +252,7 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
       break;
     case USB_REQ_GET_INTERFACE:
       sdPut(&SD1,'R');
+
       break;
     default:
       sdPut(&SD1,'J');
@@ -315,12 +316,12 @@ static const USBEndpointConfig ep1config = {
   USB_EP_MODE_TYPE_INTR,
   NULL,
   hidIN,  /* TX */
-  NULL,
+  hidOUT,
   0x0040,
   0x0000,
   &ep1instate,
   NULL,
-  2,
+  1,
   NULL
 };
 
@@ -335,13 +336,13 @@ static USBOutEndpointState ep2outstate;
 static const USBEndpointConfig ep2config = {
   USB_EP_MODE_TYPE_INTR,
   NULL,
-  NULL,
+  hidIN,
   hidOUT,
   0x0000,
   0x0040,
   NULL,
   &ep2outstate,
-  2,
+  1,
   NULL
 };
 
@@ -356,13 +357,13 @@ static USBInEndpointState ep3instate;
 static const USBEndpointConfig ep3config = {
   USB_EP_MODE_TYPE_INTR,
   NULL,
-  hidIN,  /* TX */
+  NULL,  /* TX */
   NULL,
   0x0040,
   0x0000,
   &ep3instate,
   NULL,
-  2,
+  1,
   NULL
 };
 
@@ -382,7 +383,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 //    sdPut(&SD1,'V');
     return;
   case USB_EVENT_CONFIGURED:
-    sdPut(&SD1,'W');
+//    sdPut(&SD1,'W');
     chSysLockFromISR();
 
     /* Enables the endpoints specified into the configuration.
@@ -401,7 +402,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     sdPut(&SD1,'Y');
     return;
   case USB_EVENT_STALLED:
-    sdPut(&SD1,'Z');
+//    sdPut(&SD1,'Z');
     return;
   }
   return;
@@ -420,7 +421,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 bool hidHandlerHookCB(USBDriver *usbp)
 {
 //  chprintf((BaseSequentialStream *)&SD1,"=%X",*(uint16_t*)usbp->setup);
-  switch(*(uint16_t*)usbp->setup)
+  switch(usbFetchWord(usbp->setup))
   {
     case 0x0A21: /* HID SET_IDLE - HID1_11.pdf p52, 7.2.4 */
 //      sdPut(&SD1,'M');
@@ -428,7 +429,7 @@ bool hidHandlerHookCB(USBDriver *usbp)
       return true;
     case 0x0681: /* HID GET_DESCRIPTOR - HID1_11.pdf p49, 7.1.1 */
     {
-//      sdPut(&SD1,'N');
+      sdPut(&SD1,'N');
       const USBDescriptor *dp = get_hid_descriptor(usbp,
                                     usbp->setup[3], // Type
                                     usbp->setup[2], // Index
@@ -444,8 +445,8 @@ bool hidHandlerHookCB(USBDriver *usbp)
       /* FIXME this gets rid of the timeouts,
        *       but it's probably not the right way of doing things
        */
-      uint8_t zero = 0;
-      usbSetupTransfer(usbp, &zero, 1, NULL);
+//      uint8_t zero = 0;
+//      usbSetupTransfer(usbp, &zero, 1, NULL);
       return true;
     } break;
     case 0x0921:   /* HID SET_REPORT - HID1_11.pdf p52, 7.2.2 */
@@ -503,9 +504,11 @@ int main(void) {
   usbStart(&USBD1, &usbcfg);
   usbConnectBus(&USBD1);
 
+  const uint8_t buff[] = { 0x42 };
   while (!chThdShouldTerminateX()) {
     chThdSleepMilliseconds(1000);
     palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
+    usbPrepareTransmit(&USBD1,DEBUGHID_ENDPOINT,&buff,1);
   }
 
   return 0;
