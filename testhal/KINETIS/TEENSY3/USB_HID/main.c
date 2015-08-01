@@ -418,7 +418,6 @@ bool hidHandlerHookCB(USBDriver *usbp)
   {
     case 0x0A21: /* HID SET_IDLE - HID1_11.pdf p52, 7.2.4 */
 //      sdPut(&SD1,'M');
-      usbSetupTransfer(usbp, NULL, 0, NULL); /* FIXME Nothing to do yet */
       return true;
     case 0x0681: /* HID GET_DESCRIPTOR - HID1_11.pdf p49, 7.1.1 */
     {
@@ -447,7 +446,6 @@ bool hidHandlerHookCB(USBDriver *usbp)
   }
   return false;
 }
-
 
 /*
  * USB driver configuration.
