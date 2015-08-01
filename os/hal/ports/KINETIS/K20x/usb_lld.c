@@ -745,7 +745,8 @@ void usb_lld_start_in(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-  sdPut(&SD1,'q');
+//  sdPut(&SD1,'q');
+  USBOTG->ENDPT[ep].V |= USBx_ENDPTn_EPSTALL;
 }
 
 /**
@@ -759,7 +760,8 @@ void usb_lld_stall_out(USBDriver *usbp, usbep_t ep) {
 void usb_lld_stall_in(USBDriver *usbp, usbep_t ep) {
   (void)usbp;
   (void)ep;
-  sdPut(&SD1,'r');
+//  sdPut(&SD1,'r');
+  USBOTG->ENDPT[ep].V |= USBx_ENDPTn_EPSTALL;
 }
 
 /**
