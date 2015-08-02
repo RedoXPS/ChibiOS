@@ -99,6 +99,11 @@
 
 /* DMA */
 #define KINETIS_DMA0_IRQ_VECTOR     Vector40
+
+/* USB attributes */
+#define KINETIS_HAS_USB             TRUE
+#define KINETIS_USB_IRQ_VECTOR      Vector164
+
 /** @} */
 
 #endif /* _KINETIS_REGISTRY_H_ */
