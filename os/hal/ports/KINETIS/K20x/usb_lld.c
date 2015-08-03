@@ -101,7 +101,6 @@ typedef struct {
 /* see p.891 */
 #define BDT_PID_OUT   0x01
 #define BDT_PID_IN    0x09
-#define BDT_PID_SOF   0x05
 #define BDT_PID_SETUP 0x0D
 #define BDT_TOK_PID(n)	(((n)>>2)&0xF)
 
@@ -188,6 +187,10 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
   /* Toggle the odd and data bits for next TX */
   epc->in_state->data_bank ^= DATA1;
   epc->in_state->odd_even ^= ODD;
+
+  osalSysLockFromISR();
+  usb_lld_start_in(usbp, ep);
+  osalSysUnlockFromISR();
 }
 
 void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
@@ -233,6 +236,10 @@ void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
 //  sdPut(&SD1,'.');
 //  sdPut(&SD1,'0'+epc->out_state->data_bank);
   bd->desc = BDT_DESC(epc->out_maxsize, epc->out_state->data_bank);
+
+  osalSysLockFromISR();
+  usb_lld_start_out(usbp, ep);
+  osalSysUnlockFromISR();
 }
 
 /*===========================================================================*/
@@ -346,9 +353,6 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
               _usb_isr_invoke_out_cb(usbp, ep);
         }
       } break;
-      case BDT_PID_SOF:
-        sdPut(&SD1,'!');
-        break;
       default:
         sdPut(&SD1,'$');
         break;
@@ -593,6 +597,9 @@ void usb_lld_init_endpoint(USBDriver *usbp, usbep_t ep) {
   /* EPHSHK should be set for CTRL, BULK, INTR not for ISOC*/
   if((epc->ep_mode & USB_EP_MODE_TYPE) != USB_EP_MODE_TYPE_ISOC)
     mask |= USBx_ENDPTn_EPHSHK;
+  /* Endpoint is not a CTRL endpoint, disable SETUP transfers */
+  if((epc->ep_mode & USB_EP_MODE_TYPE) != USB_EP_MODE_TYPE_CTRL)
+    mask |= USBx_ENDPTn_EPCTLDIS;
 
   USBOTG->ENDPT[ep].V = mask;
 }
