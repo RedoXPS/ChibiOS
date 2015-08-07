@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -27,7 +24,7 @@
 
 #include "hal.h"
 
-#if HAL_USE_PWM || defined(__DOXYGEN__)
+#if (HAL_USE_PWM == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -223,7 +220,7 @@ void pwmEnablePeriodicNotification(PWMDriver *pwmp) {
   osalDbgAssert(pwmp->state == PWM_READY, "not ready");
   osalDbgAssert(pwmp->config->callback != NULL, "undefined periodic callback");
 
-  pwm_lld_enable_periodic_notification(pwmp);
+  pwmEnablePeriodicNotificationI(pwmp);
 
   osalSysUnlock();
 }
@@ -246,7 +243,7 @@ void pwmDisablePeriodicNotification(PWMDriver *pwmp) {
   osalDbgAssert(pwmp->state == PWM_READY, "not ready");
   osalDbgAssert(pwmp->config->callback != NULL, "undefined periodic callback");
 
-  pwm_lld_disable_periodic_notification(pwmp);
+  pwmDisablePeriodicNotificationI(pwmp);
 
   osalSysUnlock();
 }
@@ -269,12 +266,12 @@ void pwmEnableChannelNotification(PWMDriver *pwmp, pwmchannel_t channel) {
   osalSysLock();
 
   osalDbgAssert(pwmp->state == PWM_READY, "not ready");
-  osalDbgAssert((pwmp->enabled & (1 << channel)) != 0,
+  osalDbgAssert((pwmp->enabled & ((pwmchnmsk_t)1U << (pwmchnmsk_t)channel)) != 0U,
                 "channel not enabled");
   osalDbgAssert(pwmp->config->channels[channel].callback != NULL,
                 "undefined channel callback");
 
-  pwm_lld_enable_channel_notification(pwmp, channel);
+  pwmEnableChannelNotificationI(pwmp, channel);
 
   osalSysUnlock();
 }
@@ -297,16 +294,16 @@ void pwmDisableChannelNotification(PWMDriver *pwmp, pwmchannel_t channel) {
   osalSysLock();
 
   osalDbgAssert(pwmp->state == PWM_READY, "not ready");
-  osalDbgAssert((pwmp->enabled & (1 << channel)) != 0,
+  osalDbgAssert((pwmp->enabled & ((pwmchnmsk_t)1U << (pwmchnmsk_t)channel)) != 0U,
                 "channel not enabled");
   osalDbgAssert(pwmp->config->channels[channel].callback != NULL,
                 "undefined channel callback");
 
-  pwm_lld_disable_channel_notification(pwmp, channel);
+  pwmDisableChannelNotificationI(pwmp, channel);
 
   osalSysUnlock();
 }
 
-#endif /* HAL_USE_PWM */
+#endif /* HAL_USE_PWM == TRUE */
 
 /** @} */

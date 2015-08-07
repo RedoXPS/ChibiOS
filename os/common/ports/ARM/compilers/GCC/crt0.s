@@ -50,7 +50,7 @@ Reset_Handler:
                 /*
                  * Stack pointers initialization.
                  */
-                ldr     r0, =___stacks_end__
+                ldr     r0, =__stacks_end__
                 /* Undefined */
                 msr     CPSR_c, #MODE_UND | I_BIT | F_BIT
                 mov     sp, r0
@@ -142,50 +142,13 @@ bssloop:
                 bx      r0
                 .code   16
                 bl      main
-                ldr     r1, =_main_exit_handler
+                ldr     r1, =__default_exit
                 bx      r1
                 .code   32
 #else /* !defined(THUMB_NO_INTERWORKING) */
                 bl      main
-                b       _main_exit_handler
+                b       __default_exit
 #endif /* !defined(THUMB_NO_INTERWORKING) */
-
-/*
- * Default main function exit handler.
- */
-                .weak   _main_exit_handler
-_main_exit_handler:
-.loop:          b       .loop
-
-/*
- * Default early initialization code. It is declared weak in order to be
- * replaced by the real initialization code.
- * Early initialization is performed just before reset before BSS and DATA
- * segments initialization.
- */
-#if defined(THUMB_NO_INTERWORKING)
-                .thumb_func
-                .code   16
-#endif
-                .weak   __early_init
-__early_init:
-                bx      lr
-                .code   32
-
-/*
- * Default late initialization code. It is declared weak in order to be
- * replaced by the real initialization code.
- * Early initialization is performed just after reset before BSS and DATA
- * segments initialization.
- */
-#if defined(THUMB_NO_INTERWORKING)
-                .thumb_func
-                .code   16
-#endif
-                .weak   __late_init
-__late_init:
-                bx      lr
-                .code   32
 
 #endif /* !defined(__DOXYGEN__) */
 

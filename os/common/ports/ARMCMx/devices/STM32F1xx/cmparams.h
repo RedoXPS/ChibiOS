@@ -34,7 +34,7 @@
 /**
  * @brief   Cortex core model.
  */
-#define CORTEX_MODEL            CORTEX_M3
+#define CORTEX_MODEL            3
 
 /**
  * @brief   Floating Point unit presence.
@@ -46,10 +46,6 @@
  */
 #define CORTEX_PRIORITY_BITS    4
 
-/* The following code is not processed when the file is included from an
-   asm module.*/
-#if !defined(_FROM_ASM_)
-
 /* If the device type is not externally defined, for example from the Makefile,
    then a file named board.h is included. This file must contain a device
    definition compatible with the vendor include file.*/
@@ -60,18 +56,24 @@
 #include "board.h"
 #endif
 
+/* The following code is not processed when the file is included from an
+   asm module.*/
+#if !defined(_FROM_ASM_)
+
 /* Including the device CMSIS header. Note, we are not using the definitions
    from this header because we need this file to be usable also from
    assembler source files. We verify that the info matches instead.*/
 #include "stm32f10x.h"
 
-#if !CORTEX_HAS_FPU != !__FPU_PRESENT
-#error "CMSIS __FPU_PRESENT mismatch"
+#if CORTEX_MODEL != __CORTEX_M
+#error "CMSIS __CORTEX_M mismatch"
 #endif
 
 #if CORTEX_PRIORITY_BITS != __NVIC_PRIO_BITS
 #error "CMSIS __NVIC_PRIO_BITS mismatch"
 #endif
+
+#endif /* !defined(_FROM_ASM_) */
 
 #if defined(STM32F10X_CL)
 #define __NVECTORS              72
@@ -95,8 +97,6 @@
  *          rounded to a multiple of 8.
  */
 #define CORTEX_NUM_VECTORS      __NVECTORS
-
-#endif /* !defined(_FROM_ASM_) */
 
 #endif /* _CMPARAMS_H_ */
 

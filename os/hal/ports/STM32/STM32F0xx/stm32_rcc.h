@@ -199,6 +199,68 @@
 /** @} */
 
 /**
+ * @name    CAN peripherals specific RCC operations
+ * @{
+ */
+/**
+ * @brief   Enables the CAN1 peripheral clock.
+ * @note    The @p lp parameter is ignored in this family.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableCAN1(lp) rccEnableAPB1(RCC_APB1ENR_CANEN, lp)
+
+/**
+ * @brief   Disables the CAN1 peripheral clock.
+ * @note    The @p lp parameter is ignored in this family.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccDisableCAN1(lp) rccDisableAPB1(RCC_APB1ENR_CANEN, lp)
+
+/**
+ * @brief   Resets the CAN1 peripheral.
+ *
+ * @api
+ */
+#define rccResetCAN1() rccResetAPB1(RCC_APB1RSTR_CANRST)
+/** @} */
+
+/**
+ * @name    DAC peripheral specific RCC operations
+ * @{
+ */
+/**
+ * @brief   Enables the DAC1 peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccEnableDAC1(lp) rccEnableAPB1(RCC_APB1ENR_DACEN, lp)
+
+/**
+ * @brief   Disables the DAC1 peripheral clock.
+ *
+ * @param[in] lp        low power enable flag
+ *
+ * @api
+ */
+#define rccDisableDAC1(lp) rccDisableAPB1(RCC_APB1ENR_DACEN, lp)
+
+/**
+ * @brief   Resets the DAC1 peripheral.
+ *
+ * @api
+ */
+#define rccResetDAC1() rccResetAPB1(RCC_APB1RSTR_DACRST)
+/** @} */
+
+/**
  * @name    PWR interface specific RCC operations
  * @{
  */

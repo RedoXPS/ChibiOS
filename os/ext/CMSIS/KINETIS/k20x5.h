@@ -102,6 +102,7 @@ typedef enum IRQn
  * @brief K20x Interrupt Number Definition, according to the selected device
  *        in @ref Library_configuration_section
  */
+#define __FPU_PRESENT             0
 #define __MPU_PRESENT             0
 #define __NVIC_PRIO_BITS          4
 #define __Vendor_SysTickConfig    0

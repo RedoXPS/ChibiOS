@@ -28,7 +28,7 @@
 #ifndef _CHQUEUES_H_
 #define _CHQUEUES_H_
 
-#if CH_CFG_USE_QUEUES || defined(__DOXYGEN__)
+#if (CH_CFG_USE_QUEUES == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -41,8 +41,8 @@
 #define Q_OK            MSG_OK      /**< @brief Operation successful.       */
 #define Q_TIMEOUT       MSG_TIMEOUT /**< @brief Timeout condition.          */
 #define Q_RESET         MSG_RESET   /**< @brief Queue has been reset.       */
-#define Q_EMPTY         -3          /**< @brief Queue empty.                */
-#define Q_FULL          -4          /**< @brief Queue full,                 */
+#define Q_EMPTY         (msg_t)-3   /**< @brief Queue empty.                */
+#define Q_FULL          (msg_t)-4   /**< @brief Queue full,                 */
 /** @} */
 
 /*===========================================================================*/
@@ -129,7 +129,7 @@ typedef io_queue_t output_queue_t;
  */
 #define _INPUTQUEUE_DATA(name, buffer, size, inotify, link) {               \
   _THREADS_QUEUE_DATA(name),                                                \
-  0,                                                                        \
+  0U,                                                                       \
   (uint8_t *)(buffer),                                                      \
   (uint8_t *)(buffer) + (size),                                             \
   (uint8_t *)(buffer),                                                      \
@@ -198,9 +198,12 @@ typedef io_queue_t output_queue_t;
  * @param[in] qp        pointer to a @p io_queue_t structure.
  * @return              The buffer size.
  *
- * @iclass
+ * @xclass
  */
-#define chQSizeI(qp) ((size_t)((qp)->q_top - (qp)->q_buffer))
+#define chQSizeX(qp)                                                        \
+  /*lint -save -e9033 [10.8] The cast is safe.*/                            \
+  ((size_t)((qp)->q_top - (qp)->q_buffer))                                  \
+  /*lint -restore*/
 
 /**
  * @brief   Queue space.
@@ -236,17 +239,17 @@ extern "C" {
                       qnotify_t infy, void *link);
   void chIQResetI(input_queue_t *iqp);
   msg_t chIQPutI(input_queue_t *iqp, uint8_t b);
-  msg_t chIQGetTimeout(input_queue_t *iqp, systime_t time);
+  msg_t chIQGetTimeout(input_queue_t *iqp, systime_t timeout);
   size_t chIQReadTimeout(input_queue_t *iqp, uint8_t *bp,
-                         size_t n, systime_t time);
+                         size_t n, systime_t timeout);
 
   void chOQObjectInit(output_queue_t *oqp, uint8_t *bp, size_t size,
                       qnotify_t onfy, void *link);
   void chOQResetI(output_queue_t *oqp);
-  msg_t chOQPutTimeout(output_queue_t *oqp, uint8_t b, systime_t time);
+  msg_t chOQPutTimeout(output_queue_t *oqp, uint8_t b, systime_t timeout);
   msg_t chOQGetI(output_queue_t *oqp);
   size_t chOQWriteTimeout(output_queue_t *oqp, const uint8_t *bp,
-                          size_t n, systime_t time);
+                          size_t n, systime_t timeout);
 #ifdef __cplusplus
 }
 #endif
@@ -284,7 +287,7 @@ static inline size_t chIQGetEmptyI(input_queue_t *iqp) {
 
   chDbgCheckClassI();
 
-  return (size_t)(chQSizeI(iqp) - chQSpaceI(iqp));
+  return (size_t)(chQSizeX(iqp) - chQSpaceI(iqp));
 }
 
 /**
@@ -301,7 +304,7 @@ static inline bool chIQIsEmptyI(input_queue_t *iqp) {
 
   chDbgCheckClassI();
 
-  return (bool)(chQSpaceI(iqp) <= 0);
+  return (bool)(chQSpaceI(iqp) == 0U);
 }
 
 /**
@@ -318,7 +321,7 @@ static inline bool chIQIsFullI(input_queue_t *iqp) {
 
   chDbgCheckClassI();
 
-  return (bool)((iqp->q_wrptr == iqp->q_rdptr) && (iqp->q_counter != 0));
+  return (bool)((iqp->q_wrptr == iqp->q_rdptr) && (iqp->q_counter != 0U));
 }
 
 /**
@@ -351,7 +354,7 @@ static inline size_t chOQGetFullI(output_queue_t *oqp) {
 
   chDbgCheckClassI();
 
-  return (size_t)(chQSizeI(oqp) - chQSpaceI(oqp));
+  return (size_t)(chQSizeX(oqp) - chQSpaceI(oqp));
 }
 
 /**
@@ -384,7 +387,7 @@ static inline bool chOQIsEmptyI(output_queue_t *oqp) {
 
   chDbgCheckClassI();
 
-  return (bool)((oqp->q_wrptr == oqp->q_rdptr) && (oqp->q_counter != 0));
+  return (bool)((oqp->q_wrptr == oqp->q_rdptr) && (oqp->q_counter != 0U));
 }
 
 /**
@@ -401,7 +404,7 @@ static inline bool chOQIsFullI(output_queue_t *oqp) {
 
   chDbgCheckClassI();
 
-  return (bool)(chQSpaceI(oqp) <= 0);
+  return (bool)(chQSpaceI(oqp) == 0U);
 }
 
 /**
@@ -423,7 +426,7 @@ static inline msg_t chOQPut(output_queue_t *oqp, uint8_t b) {
   return chOQPutTimeout(oqp, b, TIME_INFINITE);
 }
 
-#endif /* CH_CFG_USE_QUEUES */
+#endif /* CH_CFG_USE_QUEUES == TRUE */
 
 #endif /* _CHQUEUES_H_ */
 

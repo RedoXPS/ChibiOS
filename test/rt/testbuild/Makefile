@@ -10,6 +10,8 @@
 TRGT = mingw32-
 CC   = $(TRGT)gcc
 AS   = $(TRGT)gcc -x assembler-with-cpp
+AR   = $(TRGT)ar
+COV  = gcov
 
 # List all default C defines here, like -D_DEBUG=1
 DDEFS = -DSIMULATOR
@@ -95,9 +97,9 @@ ADEFS   = $(DADEFS) $(UADEFS)
 OBJS    = $(ASRC:.s=.o) $(SRC:.c=.o)
 LIBS    = $(DLIBS) $(ULIBS)
 
-LDFLAGS = -Wl,-Map=$(PROJECT).map,--cref,--no-warn-mismatch $(LIBDIR)
+LDFLAGS = -Wl,-Map=$(PROJECT).map,--cref,--no-warn-mismatch -lgcov $(LIBDIR)
 ASFLAGS = -Wa,-amhls=$(<:.s=.lst) $(ADEFS)
-CPFLAGS = $(OPT) -Wall -Wstrict-prototypes -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DEFS)
+CPFLAGS = $(OPT) -Wall -Wextra -Wundef -Wstrict-prototypes -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DEFS)
 
 # Generate dependency information
 CPFLAGS += -MD -MP -MF .dep/$(@F).d
@@ -108,14 +110,18 @@ CPFLAGS += -MD -MP -MF .dep/$(@F).d
 
 all: $(OBJS) $(PROJECT).exe
 
-%o : %c
+%.o : %.c
 	$(CC) -c $(CPFLAGS) -I . $(INCDIR) $< -o $@
 
-%o : %s
+%.o : %.s
 	$(AS) -c $(ASFLAGS) $< -o $@
 
-%exe: $(OBJS)
+%.exe: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+
+.PHONY: gcov
+gcov:
+	$(COV) -u -f -b -o $(CHIBIOS)/os/rt/src $(KERNSRC)
 
 clean:
 	-rm -f $(OBJS)
@@ -123,9 +129,14 @@ clean:
 	-rm -f $(PROJECT).map
 	-rm -f $(SRC:.c=.c.bak)
 	-rm -f $(SRC:.c=.lst)
+	-rm -f $(SRC:.c=.gcno)
+	-rm -f $(SRC:.c=.gcda)
 	-rm -f $(ASRC:.s=.s.bak)
 	-rm -f $(ASRC:.s=.lst)
 	-rm -fR .dep
+
+misra:
+	@lint-nt -v -w3 $(DEFS) pclint/co-gcc.lnt pclint/au-misra3.lnt pclint/waivers.lnt $(INCDIR) $(KERNSRC)
 
 #
 # Include the dependency files, should be the last of the makefile

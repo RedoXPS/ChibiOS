@@ -15,7 +15,7 @@
 */
 
 /**
- * @file    K20x7/kinetis_registry.h
+ * @file    K20x7/kinetis.h
  * @brief   K20x7 capabilities registry.
  *
  * @addtogroup HAL

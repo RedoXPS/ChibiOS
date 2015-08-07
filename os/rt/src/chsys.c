@@ -51,7 +51,7 @@
 /* Module local functions.                                                   */
 /*===========================================================================*/
 
-#if !CH_CFG_NO_IDLE_THREAD || defined(__DOXYGEN__)
+#if (CH_CFG_NO_IDLE_THREAD == FALSE) || defined(__DOXYGEN__)
 /**
  * @brief   This function implements the idle thread infinite loop.
  * @details The function puts the processor in the lowest power mode capable
@@ -65,13 +65,16 @@
 static void _idle_thread(void *p) {
 
   (void)p;
-  chRegSetThreadName("idle");
+
   while (true) {
+    /*lint -save -e522 [2.2] Apparently no side effects because it contains
+      an asm instruction.*/
     port_wait_for_interrupt();
+    /*lint -restore*/
     CH_CFG_IDLE_LOOP_HOOK();
   }
 }
-#endif /* CH_CFG_NO_IDLE_THREAD */
+#endif /* CH_CFG_NO_IDLE_THREAD == FALSE */
 
 /*===========================================================================*/
 /* Module exported functions.                                                */
@@ -88,30 +91,30 @@ static void _idle_thread(void *p) {
  * @special
  */
 void chSysInit(void) {
-#if CH_DBG_ENABLE_STACK_CHECK
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
   extern stkalign_t __main_thread_stack_base__;
 #endif
 
   port_init();
   _scheduler_init();
   _vt_init();
-#if CH_CFG_USE_TM
+#if CH_CFG_USE_TM == TRUE
   _tm_init();
 #endif
-#if CH_CFG_USE_MEMCORE
+#if CH_CFG_USE_MEMCORE == TRUE
   _core_init();
 #endif
-#if CH_CFG_USE_HEAP
+#if CH_CFG_USE_HEAP == TRUE
   _heap_init();
 #endif
-#if CH_DBG_STATISTICS
+#if CH_DBG_STATISTICS == TRUE
   _stats_init();
 #endif
-#if CH_DBG_ENABLE_TRACE
+#if CH_DBG_ENABLE_TRACE == TRUE
   _dbg_trace_init();
 #endif
 
-#if !CH_CFG_NO_IDLE_THREAD
+#if CH_CFG_NO_IDLE_THREAD == FALSE
   /* Now this instructions flow becomes the main thread.*/
   setcurrp(_thread_init(&ch.mainthread, NORMALPRIO));
 #else
@@ -120,23 +123,31 @@ void chSysInit(void) {
 #endif
 
   currp->p_state = CH_STATE_CURRENT;
-#if CH_DBG_ENABLE_STACK_CHECK
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
   /* This is a special case because the main thread thread_t structure is not
      adjacent to its stack area.*/
   currp->p_stklimit = &__main_thread_stack_base__;
 #endif
   chSysEnable();
 
+#if CH_CFG_USE_REGISTRY == TRUE
   /* Note, &ch_debug points to the string "main" if the registry is
-     active, else the parameter is ignored.*/
+     active.*/
   chRegSetThreadName((const char *)&ch_debug);
+#endif
 
-#if !CH_CFG_NO_IDLE_THREAD
+#if CH_CFG_NO_IDLE_THREAD == FALSE
+  {
   /* This thread has the lowest priority in the system, its role is just to
      serve interrupts in its context while keeping the lowest energy saving
      mode compatible with the system status.*/
-  chThdCreateStatic(ch.idle_thread_wa, sizeof(ch.idle_thread_wa), IDLEPRIO,
-                    (tfunc_t)_idle_thread, NULL);
+    thread_t *tp =  chThdCreateStatic(ch.idle_thread_wa,
+                                      sizeof(ch.idle_thread_wa),
+                                      IDLEPRIO,
+                                      (tfunc_t)_idle_thread,
+                                      NULL);
+    chRegSetThreadNameX(tp, "idle");
+  }
 #endif
 }
 
@@ -164,8 +175,122 @@ void chSysHalt(const char *reason) {
   ch.dbg.panic_msg = reason;
 
   /* Harmless infinite loop.*/
-  while (true)
-    ;
+  while (true) {
+  }
+}
+
+/**
+ * @brief   System integrity check.
+ * @details Performs an integrity check of the important ChibiOS/RT data
+ *          structures.
+ * @note    The appropriate action in case of failure is to halt the system
+ *          before releasing the critical zone.
+ * @note    If the system is corrupted then one possible outcome of this
+ *          function is an exception caused by @p NULL or corrupted pointers
+ *          in list elements. Exception vectors must be monitored as well.
+ * @note    This function is not used internally, it is up to the
+ *          application to define if and where to perform system
+ *          checking.
+ * @note    Performing all tests at once can be a slow operation and can
+ *          degrade the system response time. It is suggested to execute
+ *          one test at time and release the critical zone in between tests.
+ *
+ * @param[in] testmask  Each bit in this mask is associated to a test to be
+ *                      performed.
+ * @return              The test result.
+ * @retval false        The test succeeded.
+ * @retval true         Test failed.
+ *
+ * @iclass
+ */
+bool chSysIntegrityCheckI(unsigned testmask) {
+  cnt_t n;
+
+  chDbgCheckClassI();
+
+  /* Ready List integrity check.*/
+  if ((testmask & CH_INTEGRITY_RLIST) != 0U) {
+    thread_t *tp;
+
+    /* Scanning the ready list forward.*/
+    n = (cnt_t)0;
+    tp = ch.rlist.r_queue.p_next;
+    while (tp != (thread_t *)&ch.rlist.r_queue) {
+      n++;
+      tp = tp->p_next;
+    }
+
+    /* Scanning the ready list backward.*/
+    tp = ch.rlist.r_queue.p_prev;
+    while (tp != (thread_t *)&ch.rlist.r_queue) {
+      n--;
+      tp = tp->p_prev;
+    }
+
+    /* The number of elements must match.*/
+    if (n != (cnt_t)0) {
+      return true;
+    }
+  }
+
+  /* Timers list integrity check.*/
+  if ((testmask & CH_INTEGRITY_VTLIST) != 0U) {
+    virtual_timer_t * vtp;
+
+    /* Scanning the timers list forward.*/
+    n = (cnt_t)0;
+    vtp = ch.vtlist.vt_next;
+    while (vtp != (virtual_timer_t *)&ch.vtlist) {
+      n++;
+      vtp = vtp->vt_next;
+    }
+
+    /* Scanning the timers list backward.*/
+    vtp = ch.vtlist.vt_prev;
+    while (vtp != (virtual_timer_t *)&ch.vtlist) {
+      n--;
+      vtp = vtp->vt_prev;
+    }
+
+    /* The number of elements must match.*/
+    if (n != (cnt_t)0) {
+      return true;
+    }
+  }
+
+#if CH_CFG_USE_REGISTRY == TRUE
+  if ((testmask & CH_INTEGRITY_REGISTRY) != 0U) {
+    thread_t *tp;
+
+    /* Scanning the ready list forward.*/
+    n = (cnt_t)0;
+    tp = ch.rlist.r_newer;
+    while (tp != (thread_t *)&ch.rlist) {
+      n++;
+      tp = tp->p_newer;
+    }
+
+    /* Scanning the ready list backward.*/
+    tp = ch.rlist.r_older;
+    while (tp != (thread_t *)&ch.rlist) {
+      n--;
+      tp = tp->p_older;
+    }
+
+    /* The number of elements must match.*/
+    if (n != (cnt_t)0) {
+      return true;
+    }
+  }
+#endif /* CH_CFG_USE_REGISTRY == TRUE */
+
+#if defined(PORT_INTEGRITY_CHECK)
+  if ((testmask & CH_INTEGRITY_PORT) != 0U) {
+    PORT_INTEGRITY_CHECK();
+  }
+#endif
+
+  return false;
 }
 
 /**
@@ -185,11 +310,12 @@ void chSysTimerHandlerI(void) {
 
 #if CH_CFG_TIME_QUANTUM > 0
   /* Running thread has not used up quantum yet? */
-  if (currp->p_preempt > 0)
+  if (currp->p_preempt > (tslices_t)0) {
     /* Decrement remaining quantum.*/
     currp->p_preempt--;
+  }
 #endif
-#if CH_DBG_THREADS_PROFILING
+#if CH_DBG_THREADS_PROFILING == TRUE
   currp->p_time++;
 #endif
   chVTDoTickI();
@@ -215,10 +341,12 @@ syssts_t chSysGetStatusAndLockX(void) {
 
   syssts_t sts = port_get_irq_status();
   if (port_irq_enabled(sts)) {
-    if (port_is_isr_context())
+    if (port_is_isr_context()) {
       chSysLockFromISR();
-    else
+    }
+    else {
       chSysLock();
+    }
   }
   return sts;
 }
@@ -235,8 +363,9 @@ syssts_t chSysGetStatusAndLockX(void) {
 void chSysRestoreStatusX(syssts_t sts) {
 
   if (port_irq_enabled(sts)) {
-    if (port_is_isr_context())
+    if (port_is_isr_context()) {
       chSysUnlockFromISR();
+    }
     else {
       chSchRescheduleS();
       chSysUnlock();
@@ -244,7 +373,7 @@ void chSysRestoreStatusX(syssts_t sts) {
   }
 }
 
-#if PORT_SUPPORTS_RT || defined(__DOXYGEN__)
+#if (PORT_SUPPORTS_RT == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Realtime window test.
  * @details This function verifies if the current realtime counter value
@@ -265,8 +394,7 @@ void chSysRestoreStatusX(syssts_t sts) {
  */
 bool chSysIsCounterWithinX(rtcnt_t cnt, rtcnt_t start, rtcnt_t end) {
 
-  return end > start ? (cnt >= start) && (cnt < end) :
-                       (cnt >= start) || (cnt < end);
+  return (bool)((cnt - start) < (end - start));
 }
 
 /**
@@ -283,9 +411,10 @@ bool chSysIsCounterWithinX(rtcnt_t cnt, rtcnt_t start, rtcnt_t end) {
 void chSysPolledDelayX(rtcnt_t cycles) {
   rtcnt_t start = chSysGetRealtimeCounterX();
   rtcnt_t end  = start + cycles;
-  while (chSysIsCounterWithinX(chSysGetRealtimeCounterX(), start, end))
-    ;
+
+  while (chSysIsCounterWithinX(chSysGetRealtimeCounterX(), start, end)) {
+  }
 }
-#endif /* PORT_SUPPORTS_RT */
+#endif /* PORT_SUPPORTS_RT == TRUE */
 
 /** @} */

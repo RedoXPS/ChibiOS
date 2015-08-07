@@ -59,7 +59,7 @@
 
 #include "ch.h"
 
-#if CH_CFG_USE_EVENTS || defined(__DOXYGEN__)
+#if (CH_CFG_USE_EVENTS == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module local definitions.                                                 */
@@ -112,7 +112,7 @@ void chEvtRegisterMaskWithFlags(event_source_t *esp,
   esp->es_next     = elp;
   elp->el_listener = currp;
   elp->el_events   = events;
-  elp->el_flags    = 0;
+  elp->el_flags    = (eventflags_t)0;
   elp->el_wflags   = wflags;
   chSysUnlock();
 }
@@ -135,9 +135,13 @@ void chEvtUnregister(event_source_t *esp, event_listener_t *elp) {
 
   chDbgCheck((esp != NULL) && (elp != NULL));
 
+  /*lint -save -e9087 -e740 [11.3, 1.3] Cast required by list handling.*/
   p = (event_listener_t *)esp;
+  /*lint -restore*/
   chSysLock();
+  /*lint -save -e9087 -e740 [11.3, 1.3] Cast required by list handling.*/
   while (p->el_next != (event_listener_t *)esp) {
+  /*lint -restore*/
     if (p->el_next == elp) {
       p->el_next = elp->el_next;
       break;
@@ -159,11 +163,10 @@ eventmask_t chEvtGetAndClearEvents(eventmask_t events) {
   eventmask_t m;
 
   chSysLock();
-
   m = currp->p_epending & events;
   currp->p_epending &= ~events;
-
   chSysUnlock();
+
   return m;
 }
 
@@ -179,10 +182,10 @@ eventmask_t chEvtGetAndClearEvents(eventmask_t events) {
 eventmask_t chEvtAddEvents(eventmask_t events) {
 
   chSysLock();
-
-  events = (currp->p_epending |= events);
-
+  currp->p_epending |= events;
+  events = currp->p_epending;
   chSysUnlock();
+
   return events;
 }
 
@@ -210,12 +213,16 @@ void chEvtBroadcastFlagsI(event_source_t *esp, eventflags_t flags) {
   chDbgCheck(esp != NULL);
 
   elp = esp->es_next;
+  /*lint -save -e9087 -e740 [11.3, 1.3] Cast required by list handling.*/
   while (elp != (event_listener_t *)esp) {
+  /*lint -restore*/
     elp->el_flags |= flags;
     /* When flags == 0 the thread will always be signaled because the
        source does not emit any flag.*/
-    if ((flags == 0) || ((elp->el_flags & elp->el_wflags) != 0))
+    if ((flags == (eventflags_t)0) ||
+        ((elp->el_flags & elp->el_wflags) != (eventflags_t)0)) {
       chEvtSignalI(elp->el_listener, elp->el_events);
+    }
     elp = elp->el_next;
   }
 }
@@ -235,11 +242,10 @@ eventflags_t chEvtGetAndClearFlags(event_listener_t *elp) {
   eventflags_t flags;
 
   chSysLock();
-
   flags = elp->el_flags;
-  elp->el_flags = 0;
-
+  elp->el_flags = (eventflags_t)0;
   chSysUnlock();
+
   return flags;
 }
 
@@ -281,11 +287,11 @@ void chEvtSignalI(thread_t *tp, eventmask_t events) {
   tp->p_epending |= events;
   /* Test on the AND/OR conditions wait states.*/
   if (((tp->p_state == CH_STATE_WTOREVT) &&
-       ((tp->p_epending & tp->p_u.ewmask) != 0)) ||
+       ((tp->p_epending & tp->p_u.ewmask) != (eventmask_t)0)) ||
       ((tp->p_state == CH_STATE_WTANDEVT) &&
        ((tp->p_epending & tp->p_u.ewmask) == tp->p_u.ewmask))) {
     tp->p_u.rdymsg = MSG_OK;
-    chSchReadyI(tp);
+    (void) chSchReadyI(tp);
   }
 }
 
@@ -325,7 +331,7 @@ eventflags_t chEvtGetAndClearFlagsI(event_listener_t *elp) {
   eventflags_t flags;
 
   flags = elp->el_flags;
-  elp->el_flags = 0;
+  elp->el_flags = (eventflags_t)0;
 
   return flags;
 }
@@ -344,9 +350,9 @@ void chEvtDispatch(const evhandler_t *handlers, eventmask_t events) {
 
   chDbgCheck(handlers != NULL);
 
-  eid = 0;
-  while (events) {
-    if (events & EVENT_MASK(eid)) {
+  eid = (eventid_t)0;
+  while (events != (eventmask_t)0) {
+    if ((events & EVENT_MASK(eid)) != (eventmask_t)0) {
       chDbgAssert(handlers[eid] != NULL, "null handler");
       events &= ~EVENT_MASK(eid);
       handlers[eid](eid);
@@ -355,7 +361,9 @@ void chEvtDispatch(const evhandler_t *handlers, eventmask_t events) {
   }
 }
 
-#if CH_CFG_OPTIMIZE_SPEED || !CH_CFG_USE_EVENTS_TIMEOUT || defined(__DOXYGEN__)
+#if (CH_CFG_OPTIMIZE_SPEED == TRUE) ||                                      \
+    (CH_CFG_USE_EVENTS_TIMEOUT == FALSE) ||                                 \
+    defined(__DOXYGEN__)
 /**
  * @brief   Waits for exactly one of the specified events.
  * @details The function waits for one event among those specified in
@@ -377,16 +385,16 @@ eventmask_t chEvtWaitOne(eventmask_t events) {
   eventmask_t m;
 
   chSysLock();
-
-  if ((m = (ctp->p_epending & events)) == 0) {
+  m = ctp->p_epending & events;
+  if (m == (eventmask_t)0) {
     ctp->p_u.ewmask = events;
     chSchGoSleepS(CH_STATE_WTOREVT);
     m = ctp->p_epending & events;
   }
-  m ^= m & (m - 1);
+  m ^= m & (m - (eventmask_t)1);
   ctp->p_epending &= ~m;
-
   chSysUnlock();
+
   return m;
 }
 
@@ -407,15 +415,15 @@ eventmask_t chEvtWaitAny(eventmask_t events) {
   eventmask_t m;
 
   chSysLock();
-
-  if ((m = (ctp->p_epending & events)) == 0) {
+  m = ctp->p_epending & events;
+  if (m == (eventmask_t)0) {
     ctp->p_u.ewmask = events;
     chSchGoSleepS(CH_STATE_WTOREVT);
     m = ctp->p_epending & events;
   }
   ctp->p_epending &= ~m;
-
   chSysUnlock();
+
   return m;
 }
 
@@ -434,19 +442,18 @@ eventmask_t chEvtWaitAll(eventmask_t events) {
   thread_t *ctp = currp;
 
   chSysLock();
-
   if ((ctp->p_epending & events) != events) {
     ctp->p_u.ewmask = events;
     chSchGoSleepS(CH_STATE_WTANDEVT);
   }
   ctp->p_epending &= ~events;
-
   chSysUnlock();
+
   return events;
 }
 #endif /* CH_CFG_OPTIMIZE_SPEED || !CH_CFG_USE_EVENTS_TIMEOUT */
 
-#if CH_CFG_USE_EVENTS_TIMEOUT || defined(__DOXYGEN__)
+#if (CH_CFG_USE_EVENTS_TIMEOUT == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Waits for exactly one of the specified events.
  * @details The function waits for one event among those specified in
@@ -474,8 +481,8 @@ eventmask_t chEvtWaitOneTimeout(eventmask_t events, systime_t time) {
   eventmask_t m;
 
   chSysLock();
-
-  if ((m = (ctp->p_epending & events)) == 0) {
+  m = ctp->p_epending & events;
+  if (m == (eventmask_t)0) {
     if (TIME_IMMEDIATE == time) {
       chSysUnlock();
       return (eventmask_t)0;
@@ -487,10 +494,10 @@ eventmask_t chEvtWaitOneTimeout(eventmask_t events, systime_t time) {
     }
     m = ctp->p_epending & events;
   }
-  m ^= m & (m - 1);
+  m ^= m & (m - (eventmask_t)1);
   ctp->p_epending &= ~m;
-
   chSysUnlock();
+
   return m;
 }
 
@@ -517,8 +524,8 @@ eventmask_t chEvtWaitAnyTimeout(eventmask_t events, systime_t time) {
   eventmask_t m;
 
   chSysLock();
-
-  if ((m = (ctp->p_epending & events)) == 0) {
+  m = ctp->p_epending & events;
+  if (m == (eventmask_t)0) {
     if (TIME_IMMEDIATE == time) {
       chSysUnlock();
       return (eventmask_t)0;
@@ -531,8 +538,8 @@ eventmask_t chEvtWaitAnyTimeout(eventmask_t events, systime_t time) {
     m = ctp->p_epending & events;
   }
   ctp->p_epending &= ~m;
-
   chSysUnlock();
+
   return m;
 }
 
@@ -557,7 +564,6 @@ eventmask_t chEvtWaitAllTimeout(eventmask_t events, systime_t time) {
   thread_t *ctp = currp;
 
   chSysLock();
-
   if ((ctp->p_epending & events) != events) {
     if (TIME_IMMEDIATE == time) {
       chSysUnlock();
@@ -570,12 +576,12 @@ eventmask_t chEvtWaitAllTimeout(eventmask_t events, systime_t time) {
     }
   }
   ctp->p_epending &= ~events;
-
   chSysUnlock();
+
   return events;
 }
-#endif /* CH_CFG_USE_EVENTS_TIMEOUT */
+#endif /* CH_CFG_USE_EVENTS_TIMEOUT == TRUE */
 
-#endif /* CH_CFG_USE_EVENTS */
+#endif /* CH_CFG_USE_EVENTS == TRUE */
 
 /** @} */

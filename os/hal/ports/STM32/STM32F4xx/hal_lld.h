@@ -102,10 +102,6 @@
  * @name    Absolute Maximum Ratings
  * @{
  */
-/**
- * @name    Absolute Maximum Ratings
- * @{
- */
 #if defined(STM32F427xx) || defined(STM32F437xx) ||                         \
     defined(STM32F429xx) || defined(STM32F439xx) ||                         \
     defined(__DOXYGEN__)
@@ -361,6 +357,13 @@
 #define STM32_I2SSRC_MASK       (1 << 23)   /**< I2CSRC mask.               */
 #define STM32_I2SSRC_PLLI2S     (0 << 23)   /**< I2SSRC is PLLI2S.          */
 #define STM32_I2SSRC_CKIN       (1 << 23)   /**< I2S_CKIN is PLLI2S.        */
+
+#define STM32_SAISRC_NOCLOCK    (0 << 23)   /**< No clock.                  */
+#define STM32_SAISRC_PLL        (1 << 23)   /**< SAI_CKIN is PLL.           */
+#define STM32_SAIR_DIV2         (0 << 16)   /**< R divided by 2.            */
+#define STM32_SAIR_DIV4         (1 << 16)   /**< R divided by 4.            */
+#define STM32_SAIR_DIV8         (2 << 16)   /**< R divided by 8.            */
+#define STM32_SAIR_DIV16        (3 << 16)   /**< R divided by 16.           */
 
 #define STM32_MCO1PRE_MASK      (7 << 24)   /**< MCO1PRE mask.              */
 #define STM32_MCO1PRE_DIV1      (0 << 24)   /**< MCO1 divided by 1.         */
@@ -682,6 +685,30 @@
  */
 #if !defined(STM32_PLLI2SR_VALUE) || defined(__DOXYGEN__)
 #define STM32_PLLI2SR_VALUE         5
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 2..15.
+ */
+#if !defined(STM32_PLLSAIQ_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIQ_VALUE         8
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 49..432.
+ */
+#if !defined(STM32_PLLSAIN_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIN_VALUE         120
+#endif
+
+/**
+ * @brief   PLLSAIQ value.
+ * @note    The allowed values are 2..7.
+ */
+#if !defined(STM32_PLLSAIR_VALUE) || defined(__DOXYGEN__)
+#define STM32_PLLSAIR_VALUE         4
 #endif
 /** @} */
 
@@ -1278,6 +1305,52 @@
 #error "invalid STM32_PLLI2SR_VALUE value specified"
 #endif
 
+/*
+ * PLLSAI enable check.
+ */
+#if !defined(STM32_SAISRC)
+#define STM32_SAISRC                STM32_SAISRC_NOCLOCK
+#endif
+
+/**
+ * @brief   PLL activation flag.
+ */
+#if (STM32_SAISRC == STM32_SAISRC_PLL) || defined(__DOXYGEN__)
+#define STM32_ACTIVATE_PLLSAI       TRUE
+#else
+#define STM32_ACTIVATE_PLLSAI       FALSE
+#endif
+
+/**
+ * @brief   STM32_PLLSAIN field.
+ */
+#if ((STM32_PLLSAIN_VALUE >= 49) && (STM32_PLLSAIN_VALUE <= 432)) ||        \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIN               (STM32_PLLSAIN_VALUE << 6)
+#else
+#error "invalid STM32_PLLSAIN_VALUE value specified"
+#endif
+
+/**
+ * @brief   STM32_PLLSAIQ field.
+ */
+#if ((STM32_PLLSAIQ_VALUE >= 2) && (STM32_PLLSAIQ_VALUE <= 15)) ||          \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIQ               (STM32_PLLSAIQ_VALUE << 24)
+#else
+#error "invalid STM32_PLLSAIR_VALUE value specified"
+#endif
+
+/**
+ * @brief   STM32_PLLSAIR field.
+ */
+#if ((STM32_PLLSAIR_VALUE >= 2) && (STM32_PLLSAIR_VALUE <= 7)) ||           \
+    defined(__DOXYGEN__)
+#define STM32_PLLSAIR               (STM32_PLLSAIR_VALUE << 28)
+#else
+#error "invalid STM32_PLLSAIR_VALUE value specified"
+#endif
+
 /**
  * @brief   PLL VCO frequency.
  */
@@ -1405,7 +1478,8 @@
 #endif
 
 /**
- * @brief   Timers 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14 clock.
+ * @brief   Clock of timers connected to APB1
+ *          (Timers 2, 3, 4, 5, 6, 7, 12, 13, 14).
  */
 #if (STM32_PPRE1 == STM32_PPRE1_DIV1) || defined(__DOXYGEN__)
 #define STM32_TIMCLK1               (STM32_PCLK1 * 1)
@@ -1414,7 +1488,7 @@
 #endif
 
 /**
- * @brief   Timers 1, 8 clock.
+ * @brief   Clock of timers connected to APB2 (Timers 1, 8, 9, 10, 11).
  */
 #if (STM32_PPRE2 == STM32_PPRE2_DIV1) || defined(__DOXYGEN__)
 #define STM32_TIMCLK2               (STM32_PCLK2 * 1)

@@ -499,7 +499,7 @@ static bool otg_txfifo_handler(USBDriver *usbp, usbep_t ep) {
       return FALSE;
 
 #if STM32_USB_OTGFIFO_FILL_BASEPRI
-    __set_BASEPRI(CORTEX_PRIORITY_MASK(STM32_USB_OTGFIFO_FILL_BASEPRI));
+    __set_BASEPRI(CORTEX_PRIO_MASK(STM32_USB_OTGFIFO_FILL_BASEPRI));
 #endif
     /* Handles the two cases: linear buffer or queue.*/
     if (usbp->epc[ep]->in_state->txqueued) {
@@ -515,11 +515,11 @@ static bool otg_txfifo_handler(USBDriver *usbp, usbep_t ep) {
                                  n);
       usbp->epc[ep]->in_state->mode.linear.txbuf += n;
     }
-    usbp->epc[ep]->in_state->txcnt += n;
-  }
 #if STM32_USB_OTGFIFO_FILL_BASEPRI
   __set_BASEPRI(0);
 #endif
+    usbp->epc[ep]->in_state->txcnt += n;
+  }
 }
 
 /**
@@ -915,17 +915,17 @@ void usb_lld_stop(USBDriver *usbp) {
     otgp->GAHBCFG    = 0;
     otgp->GCCFG      = 0;
 
-#if STM32_USB_USE_USB1
+#if STM32_USB_USE_OTG1
     if (&USBD1 == usbp) {
       nvicDisableVector(STM32_OTG1_NUMBER);
-      rccDisableOTG1(FALSE);
+      rccDisableOTG_FS(FALSE);
     }
 #endif
 
-#if STM32_USB_USE_USB2
+#if STM32_USB_USE_OTG2
     if (&USBD2 == usbp) {
       nvicDisableVector(STM32_OTG2_NUMBER);
-      rccDisableOTG2(FALSE);
+      rccDisableOTG_HS(FALSE);
     }
 #endif
   }
@@ -1288,11 +1288,10 @@ void usb_lld_clear_in(USBDriver *usbp, usbep_t ep) {
  *          in order to not perform heavy tasks withing interrupt handlers.
  *
  * @param[in] p         pointer to the @p USBDriver object
- * @return              The function never returns.
  *
  * @special
  */
-msg_t usb_lld_pump(void *p) {
+void usb_lld_pump(void *p) {
   USBDriver *usbp = (USBDriver *)p;
   stm32_otg_t *otgp = usbp->otg;
 

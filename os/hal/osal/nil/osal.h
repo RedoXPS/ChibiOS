@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -120,7 +117,7 @@
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
-#if !NIL_CFG_USE_EVENTS
+#if NIL_CFG_USE_EVENTS == FALSE
 #error "OSAL requires NIL_CFG_USE_EVENTS=TRUE"
 #endif
 
@@ -188,7 +185,7 @@ typedef struct event_source event_source_t;
  * @note    This type is not part of the OSAL API and is provided
  *          exclusively as an example and for convenience.
  */
-typedef void (*eventcallback_t)(event_source_t *);
+typedef void (*eventcallback_t)(event_source_t *p);
 
 /**
  * @brief   Type of an event flags mask.
@@ -280,6 +277,11 @@ typedef struct {
  * @name    IRQ service routines wrappers
  * @{
  */
+/**
+ * @brief   Priority level verification macro.
+ */
+#define OSAL_IRQ_IS_VALID_PRIORITY(n) CH_IRQ_IS_VALID_KERNEL_PRIORITY(n)
+
 /**
  * @brief   IRQ prologue code.
  * @details This macro must be inserted at the start of all IRQ handlers.
@@ -424,6 +426,26 @@ static inline void osalSysHalt(const char *reason) {
 }
 
 /**
+ * @brief   Disables interrupts globally.
+ *
+ * @special
+ */
+static inline void osalSysDisable(void) {
+
+  chSysDisable();
+}
+
+/**
+ * @brief   Enables interrupts globally.
+ *
+ * @special
+ */
+static inline void osalSysEnable(void) {
+
+  chSysEnable();
+}
+
+/**
  * @brief   Enters a critical zone from thread context.
  * @note    This function cannot be used for reentrant critical zones.
  *
@@ -508,7 +530,7 @@ static inline void osalSysRestoreStatusX(syssts_t sts) {
  *
  * @xclass
  */
-#if PORT_SUPPORTS_RT || defined(__DOXYGEN__)
+#if (PORT_SUPPORTS_RT == TRUE) || defined(__DOXYGEN__)
 static inline void osalSysPolledDelayX(rtcnt_t cycles) {
 
   chSysPolledDelayX(cycles);
@@ -694,7 +716,7 @@ static inline void osalThreadResumeS(thread_reference_t *trp, msg_t msg) {
  */
 static inline void osalThreadQueueObjectInit(threads_queue_t *tqp) {
 
-  chSemObjectInit(&tqp->sem, 0);
+  chSemObjectInit(&tqp->sem, (cnt_t)0);
 }
 
 /**
@@ -713,7 +735,7 @@ static inline void osalThreadQueueObjectInit(threads_queue_t *tqp) {
  *                      .
  * @return              The message from @p osalQueueWakeupOneI() or
  *                      @p osalQueueWakeupAllI() functions.
- * @retval RDY_TIMEOUT  if the thread has not been dequeued within the
+ * @retval MSG_TIMEOUT  if the thread has not been dequeued within the
  *                      specified timeout or if the function has been
  *                      invoked with @p TIME_IMMEDIATE as timeout
  *                      specification.
@@ -756,8 +778,9 @@ static inline void osalEventBroadcastFlagsI(event_source_t *esp,
   osalDbgCheck(esp != NULL);
 
   esp->flags |= flags;
-  if (esp->cb != NULL)
+  if (esp->cb != NULL) {
     esp->cb(esp);
+  }
 }
 
 /**
@@ -811,7 +834,7 @@ static inline void osalEventSetCallback(event_source_t *esp,
  */
 static inline void osalMutexObjectInit(mutex_t *mp) {
 
-  chSemObjectInit((semaphore_t *)mp, 1);
+  chSemObjectInit((semaphore_t *)mp, (cnt_t)1);
 }
 
 /**
@@ -825,7 +848,7 @@ static inline void osalMutexObjectInit(mutex_t *mp) {
  */
 static inline void osalMutexLock(mutex_t *mp) {
 
-  chSemWait((semaphore_t *)mp);
+  (void) chSemWait((semaphore_t *)mp);
 }
 
 /**

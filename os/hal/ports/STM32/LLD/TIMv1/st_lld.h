@@ -54,6 +54,7 @@
  * @brief   TIMx unit (by number) to be used for free running operations.
  * @note    You must select a 32 bits timer if a 32 bits @p systick_t type
  *          is required.
+ * @note    Timers 2, 3, 4 and 5 are supported.
  */
 #if !defined(STM32_ST_USE_TIMER) || defined(__DOXYGEN__)
 #define STM32_ST_USE_TIMER                  2
@@ -87,6 +88,18 @@
 #error "TIM5 not present"
 #endif
 #define STM32_ST_TIM                              STM32_TIM5
+
+#elif STM32_ST_USE_TIMER == 21
+#if !STM32_HAS_TIM21
+#error "TIM21 not present"
+#endif
+#define STM32_ST_TIM                              STM32_TIM21
+
+#elif STM32_ST_USE_TIMER == 22
+#if !STM32_HAS_TIM22
+#error "TIM22 not present"
+#endif
+#define STM32_ST_TIM                              STM32_TIM22
 
 #else
 #error "STM32_ST_USE_TIMER specifies an unsupported timer"

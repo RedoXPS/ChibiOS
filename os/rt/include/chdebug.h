@@ -74,7 +74,7 @@
 /* Module data structures and types.                                         */
 /*===========================================================================*/
 
-#if CH_DBG_ENABLE_TRACE || defined(__DOXYGEN__)
+#if (CH_DBG_ENABLE_TRACE == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Trace buffer record.
  */
@@ -120,14 +120,14 @@ typedef struct {
 /* Module macros.                                                            */
 /*===========================================================================*/
 
-#if CH_DBG_SYSTEM_STATE_CHECK
-#define _dbg_enter_lock() (ch.dbg.lock_cnt = 1)
-#define _dbg_leave_lock() (ch.dbg.lock_cnt = 0)
+#if CH_DBG_SYSTEM_STATE_CHECK == TRUE
+#define _dbg_enter_lock() (ch.dbg.lock_cnt = (cnt_t)1)
+#define _dbg_leave_lock() (ch.dbg.lock_cnt = (cnt_t)0)
 #endif
 
 /* When the state checker feature is disabled then the following functions
    are replaced by an empty macro.*/
-#if !CH_DBG_SYSTEM_STATE_CHECK
+#if CH_DBG_SYSTEM_STATE_CHECK == FALSE
 #define _dbg_enter_lock()
 #define _dbg_leave_lock()
 #define _dbg_check_disable()
@@ -145,7 +145,7 @@ typedef struct {
 
 /* When the trace feature is disabled this function is replaced by an empty
    macro.*/
-#if !CH_DBG_ENABLE_TRACE
+#if CH_DBG_ENABLE_TRACE == FALSE
 #define _dbg_trace(otp)
 #endif
 
@@ -165,9 +165,14 @@ typedef struct {
  */
 #if !defined(chDbgCheck)
 #define chDbgCheck(c) do {                                                  \
-  if (CH_DBG_ENABLE_CHECKS && !(c))                                         \
-    chSysHalt(__func__);                                                    \
-} while (0)
+  /*lint -save -e506 -e774 [2.1, 14.3] Can be a constant by design.*/       \
+  if (CH_DBG_ENABLE_CHECKS != FALSE) {                                      \
+    if (!(c)) {                                                             \
+  /*lint -restore*/                                                         \
+      chSysHalt(__func__);                                                  \
+    }                                                                       \
+  }                                                                         \
+} while (false)
 #endif /* !defined(chDbgCheck) */
 
 /**
@@ -186,9 +191,14 @@ typedef struct {
  */
 #if !defined(chDbgAssert)
 #define chDbgAssert(c, r) do {                                              \
-  if (CH_DBG_ENABLE_ASSERTS && !(c))                                        \
-    chSysHalt(__func__);                                                    \
-} while (0)
+  /*lint -save -e506 -e774 [2.1, 14.3] Can be a constant by design.*/       \
+  if (CH_DBG_ENABLE_ASSERTS != FALSE) {                                     \
+    if (!(c)) {                                                             \
+  /*lint -restore*/                                                         \
+      chSysHalt(__func__);                                                  \
+    }                                                                       \
+  }                                                                         \
+} while (false)
 #endif /* !defined(chDbgAssert) */
 /** @} */
 
@@ -199,7 +209,7 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if CH_DBG_SYSTEM_STATE_CHECK
+#if CH_DBG_SYSTEM_STATE_CHECK == TRUE
   void _dbg_check_disable(void);
   void _dbg_check_suspend(void);
   void _dbg_check_enable(void);
@@ -212,7 +222,7 @@ extern "C" {
   void chDbgCheckClassI(void);
   void chDbgCheckClassS(void);
 #endif
-#if CH_DBG_ENABLE_TRACE || defined(__DOXYGEN__)
+#if (CH_DBG_ENABLE_TRACE == TRUE) || defined(__DOXYGEN__)
   void _dbg_trace_init(void);
   void _dbg_trace(thread_t *otp);
 #endif

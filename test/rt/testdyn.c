@@ -50,7 +50,7 @@
  */
 
 #if CH_CFG_USE_DYNAMIC || defined(__DOXYGEN__)
-#if (CH_CFG_USE_HEAP && !CH_CFG_USE_MALLOC_HEAP) || defined(__DOXYGEN__)
+#if CH_CFG_USE_HEAP || defined(__DOXYGEN__)
 static memory_heap_t heap1;
 #endif
 #if CH_CFG_USE_MEMPOOLS || defined(__DOXYGEN__)
@@ -68,13 +68,12 @@ static memory_pool_t mp1;
  * one to fail.
  */
 
-static msg_t thread(void *p) {
+static THD_FUNCTION(thread, p) {
 
   test_emit_token(*(char *)p);
-  return 0;
 }
 
-#if (CH_CFG_USE_HEAP && !CH_CFG_USE_MALLOC_HEAP) || defined(__DOXYGEN__)
+#if CH_CFG_USE_HEAP || defined(__DOXYGEN__)
 static void dyn1_setup(void) {
 
   chHeapObjectInit(&heap1, test.buffer, sizeof(union test_buffers));
@@ -181,8 +180,7 @@ ROMCONST struct testcase testdyn2 = {
 };
 #endif /* CH_CFG_USE_MEMPOOLS */
 
-#if (CH_CFG_USE_HEAP && !CH_CFG_USE_MALLOC_HEAP && CH_CFG_USE_REGISTRY) ||              \
-    defined(__DOXYGEN__)
+#if (CH_CFG_USE_HEAP && CH_CFG_USE_REGISTRY) || defined(__DOXYGEN__)
 /**
  * @page test_dynamic_003 Registry and References test
  *
@@ -252,14 +250,13 @@ ROMCONST struct testcase testdyn3 = {
  */
 ROMCONST struct testcase * ROMCONST patterndyn[] = {
 #if CH_CFG_USE_DYNAMIC || defined(__DOXYGEN__)
-#if (CH_CFG_USE_HEAP && !CH_CFG_USE_MALLOC_HEAP) || defined(__DOXYGEN__)
+#if CH_CFG_USE_HEAP || defined(__DOXYGEN__)
   &testdyn1,
 #endif
 #if CH_CFG_USE_MEMPOOLS || defined(__DOXYGEN__)
   &testdyn2,
 #endif
-#if (CH_CFG_USE_HEAP && !CH_CFG_USE_MALLOC_HEAP && CH_CFG_USE_REGISTRY) ||              \
-    defined(__DOXYGEN__)
+#if (CH_CFG_USE_HEAP && CH_CFG_USE_REGISTRY) || defined(__DOXYGEN__)
   &testdyn3,
 #endif
 #endif

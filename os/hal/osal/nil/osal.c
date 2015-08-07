@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -62,7 +59,7 @@
 void osalThreadDequeueNextI(threads_queue_t *tqp, msg_t msg) {
   semaphore_t *sp = &tqp->sem;
 
-  if (chSemGetCounterI(&tqp->sem) < 0) {
+  if (chSemGetCounterI(&tqp->sem) < (cnt_t)0) {
     thread_reference_t tr = nil.threads;
     while (true) {
       /* Is this thread waiting on this semaphore?*/
@@ -71,7 +68,7 @@ void osalThreadDequeueNextI(threads_queue_t *tqp, msg_t msg) {
 
         chDbgAssert(NIL_THD_IS_WTSEM(tr), "not waiting");
 
-        chSchReadyI(tr, msg);
+        (void) chSchReadyI(tr, msg);
         return;
       }
       tr++;
@@ -96,16 +93,16 @@ void osalThreadDequeueAllI(threads_queue_t *tqp, msg_t msg) {
   cnt_t cnt;
 
   cnt = sp->cnt;
-  sp->cnt = 0;
+  sp->cnt = (cnt_t)0;
   tr = nil.threads;
-  while (cnt < 0) {
+  while (cnt < (cnt_t)0) {
     /* Is this thread waiting on this semaphore?*/
     if (tr->u1.semp == sp) {
 
       chDbgAssert(NIL_THD_IS_WTSEM(tr), "not waiting");
 
       cnt++;
-      chSchReadyI(tr, msg);
+      (void) chSchReadyI(tr, msg);
     }
     tr++;
 

@@ -71,7 +71,7 @@
 
 #include "ch.h"
 
-#if CH_CFG_USE_MUTEXES || defined(__DOXYGEN__)
+#if (CH_CFG_USE_MUTEXES == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module exported variables.                                                */
@@ -106,8 +106,8 @@ void chMtxObjectInit(mutex_t *mp) {
 
   queue_init(&mp->m_queue);
   mp->m_owner = NULL;
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-  mp->m_cnt = 0;
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+  mp->m_cnt = (cnt_t)0;
 #endif
 }
 
@@ -123,9 +123,7 @@ void chMtxObjectInit(mutex_t *mp) {
 void chMtxLock(mutex_t *mp) {
 
   chSysLock();
-
   chMtxLockS(mp);
-
   chSysUnlock();
 }
 
@@ -146,14 +144,15 @@ void chMtxLockS(mutex_t *mp) {
 
   /* Is the mutex already locked? */
   if (mp->m_owner != NULL) {
-#if CH_CFG_USE_MUTEXES_RECURSIVE
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
 
-    chDbgAssert(mp->m_cnt >= 1, "counter is not positive");
+    chDbgAssert(mp->m_cnt >= (cnt_t)1, "counter is not positive");
 
     /* If the mutex is already owned by this thread, the counter is increased
        and there is no need of more actions.*/
-    if (mp->m_owner == ctp)
+    if (mp->m_owner == ctp) {
       mp->m_cnt++;
+    }
     else {
 #endif
       /* Priority inheritance protocol; explores the thread-mutex dependencies
@@ -171,34 +170,39 @@ void chMtxLockS(mutex_t *mp) {
         switch (tp->p_state) {
         case CH_STATE_WTMTX:
           /* Re-enqueues the mutex owner with its new priority.*/
-          queue_prio_insert(queue_dequeue(tp),
-                            (threads_queue_t *)tp->p_u.wtobjp);
-          tp = ((mutex_t *)tp->p_u.wtobjp)->m_owner;
+          queue_prio_insert(queue_dequeue(tp), &tp->p_u.wtmtxp->m_queue);
+          tp = tp->p_u.wtmtxp->m_owner;
+          /*lint -e{9042} [16.1] Continues the while.*/
           continue;
-  #if CH_CFG_USE_CONDVARS |                                                       \
-      (CH_CFG_USE_SEMAPHORES && CH_CFG_USE_SEMAPHORES_PRIORITY) |                     \
-      (CH_CFG_USE_MESSAGES && CH_CFG_USE_MESSAGES_PRIORITY)
-  #if CH_CFG_USE_CONDVARS
+#if (CH_CFG_USE_CONDVARS == TRUE) ||                                        \
+    ((CH_CFG_USE_SEMAPHORES == TRUE) &&                                     \
+     (CH_CFG_USE_SEMAPHORES_PRIORITY == TRUE)) ||                           \
+    ((CH_CFG_USE_MESSAGES == TRUE) &&                                       \
+     (CH_CFG_USE_MESSAGES_PRIORITY == TRUE))
+#if CH_CFG_USE_CONDVARS == TRUE
         case CH_STATE_WTCOND:
-  #endif
-  #if CH_CFG_USE_SEMAPHORES && CH_CFG_USE_SEMAPHORES_PRIORITY
+#endif
+#if (CH_CFG_USE_SEMAPHORES == TRUE) &&                                      \
+    (CH_CFG_USE_SEMAPHORES_PRIORITY == TRUE)
         case CH_STATE_WTSEM:
-  #endif
-  #if CH_CFG_USE_MESSAGES && CH_CFG_USE_MESSAGES_PRIORITY
+#endif
+#if (CH_CFG_USE_MESSAGES == TRUE) && (CH_CFG_USE_MESSAGES_PRIORITY == TRUE)
         case CH_STATE_SNDMSGQ:
-  #endif
+#endif
           /* Re-enqueues tp with its new priority on the queue.*/
-          queue_prio_insert(queue_dequeue(tp),
-                            (threads_queue_t *)tp->p_u.wtobjp);
+          queue_prio_insert(queue_dequeue(tp), &tp->p_u.wtmtxp->m_queue);
           break;
-  #endif
+#endif
         case CH_STATE_READY:
-  #if CH_DBG_ENABLE_ASSERTS
+#if CH_DBG_ENABLE_ASSERTS == TRUE
           /* Prevents an assertion in chSchReadyI().*/
           tp->p_state = CH_STATE_CURRENT;
-  #endif
+#endif
           /* Re-enqueues tp with its new priority on the ready list.*/
-          chSchReadyI(queue_dequeue(tp));
+          (void) chSchReadyI(queue_dequeue(tp));
+          break;
+        default:
+          /* Nothing to do for other states.*/
           break;
         }
         break;
@@ -206,21 +210,21 @@ void chMtxLockS(mutex_t *mp) {
 
       /* Sleep on the mutex.*/
       queue_prio_insert(ctp, &mp->m_queue);
-      ctp->p_u.wtobjp = mp;
+      ctp->p_u.wtmtxp = mp;
       chSchGoSleepS(CH_STATE_WTMTX);
 
       /* It is assumed that the thread performing the unlock operation assigns
          the mutex to this thread.*/
       chDbgAssert(mp->m_owner == ctp, "not owner");
       chDbgAssert(ctp->p_mtxlist == mp, "not owned");
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-      chDbgAssert(mp->m_cnt == 1, "counter is not one");
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+      chDbgAssert(mp->m_cnt == (cnt_t)1, "counter is not one");
     }
 #endif
   }
   else {
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-    chDbgAssert(mp->m_cnt == 0, "counter is not zero");
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+    chDbgAssert(mp->m_cnt == (cnt_t)0, "counter is not zero");
 
     mp->m_cnt++;
 #endif
@@ -252,10 +256,9 @@ bool chMtxTryLock(mutex_t *mp) {
   bool b;
 
   chSysLock();
-
   b = chMtxTryLockS(mp);
-
   chSysUnlock();
+
   return b;
 }
 
@@ -282,9 +285,9 @@ bool chMtxTryLockS(mutex_t *mp) {
   chDbgCheck(mp != NULL);
 
   if (mp->m_owner != NULL) {
-#if CH_CFG_USE_MUTEXES_RECURSIVE
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
 
-    chDbgAssert(mp->m_cnt >= 1, "counter is not positive");
+    chDbgAssert(mp->m_cnt >= (cnt_t)1, "counter is not positive");
 
     if (mp->m_owner == currp) {
       mp->m_cnt++;
@@ -293,9 +296,9 @@ bool chMtxTryLockS(mutex_t *mp) {
 #endif
     return false;
   }
-#if CH_CFG_USE_MUTEXES_RECURSIVE
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
 
-  chDbgAssert(mp->m_cnt == 0, "counter is not zero");
+  chDbgAssert(mp->m_cnt == (cnt_t)0, "counter is not zero");
 
   mp->m_cnt++;
 #endif
@@ -327,10 +330,10 @@ void chMtxUnlock(mutex_t *mp) {
 
   chDbgAssert(ctp->p_mtxlist != NULL, "owned mutexes list empty");
   chDbgAssert(ctp->p_mtxlist->m_owner == ctp, "ownership failure");
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-  chDbgAssert(mp->m_cnt >= 1, "counter is not positive");
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+  chDbgAssert(mp->m_cnt >= (cnt_t)1, "counter is not positive");
 
-  if (--mp->m_cnt == 0) {
+  if (--mp->m_cnt == (cnt_t)0) {
 #endif
 
     chDbgAssert(ctp->p_mtxlist == mp, "not next in list");
@@ -352,8 +355,10 @@ void chMtxUnlock(mutex_t *mp) {
         /* If the highest priority thread waiting in the mutexes list has a
            greater priority than the current thread base priority then the
            final priority will have at least that priority.*/
-        if (chMtxQueueNotEmptyS(lmp) && (lmp->m_queue.p_next->p_prio > newprio))
+        if (chMtxQueueNotEmptyS(lmp) &&
+            (lmp->m_queue.p_next->p_prio > newprio)) {
           newprio = lmp->m_queue.p_next->p_prio;
+        }
         lmp = lmp->m_next;
       }
 
@@ -363,8 +368,8 @@ void chMtxUnlock(mutex_t *mp) {
 
       /* Awakens the highest priority thread waiting for the unlocked mutex and
          assigns the mutex to it.*/
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-      mp->m_cnt = 1;
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+      mp->m_cnt = (cnt_t)1;
 #endif
       tp = queue_fifo_remove(&mp->m_queue);
       mp->m_owner = tp;
@@ -372,9 +377,10 @@ void chMtxUnlock(mutex_t *mp) {
       tp->p_mtxlist = mp;
       chSchWakeupS(tp, MSG_OK);
     }
-    else
+    else {
       mp->m_owner = NULL;
-#if CH_CFG_USE_MUTEXES_RECURSIVE
+    }
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
   }
 #endif
 
@@ -404,10 +410,10 @@ void chMtxUnlockS(mutex_t *mp) {
 
   chDbgAssert(ctp->p_mtxlist != NULL, "owned mutexes list empty");
   chDbgAssert(ctp->p_mtxlist->m_owner == ctp, "ownership failure");
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-  chDbgAssert(mp->m_cnt >= 1, "counter is not positive");
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+  chDbgAssert(mp->m_cnt >= (cnt_t)1, "counter is not positive");
 
-  if (--mp->m_cnt == 0) {
+  if (--mp->m_cnt == (cnt_t)0) {
 #endif
 
     chDbgAssert(ctp->p_mtxlist == mp, "not next in list");
@@ -429,8 +435,10 @@ void chMtxUnlockS(mutex_t *mp) {
         /* If the highest priority thread waiting in the mutexes list has a
            greater priority than the current thread base priority then the
            final priority will have at least that priority.*/
-        if (chMtxQueueNotEmptyS(lmp) && (lmp->m_queue.p_next->p_prio > newprio))
+        if (chMtxQueueNotEmptyS(lmp) &&
+            (lmp->m_queue.p_next->p_prio > newprio)) {
           newprio = lmp->m_queue.p_next->p_prio;
+        }
         lmp = lmp->m_next;
       }
 
@@ -440,18 +448,19 @@ void chMtxUnlockS(mutex_t *mp) {
 
       /* Awakens the highest priority thread waiting for the unlocked mutex and
          assigns the mutex to it.*/
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-      mp->m_cnt = 1;
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+      mp->m_cnt = (cnt_t)1;
 #endif
       tp = queue_fifo_remove(&mp->m_queue);
       mp->m_owner = tp;
       mp->m_next = tp->p_mtxlist;
       tp->p_mtxlist = mp;
-      chSchReadyI(tp);
+      (void) chSchReadyI(tp);
     }
-    else
+    else {
       mp->m_owner = NULL;
-#if CH_CFG_USE_MUTEXES_RECURSIVE
+    }
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
   }
 #endif
 }
@@ -476,18 +485,18 @@ void chMtxUnlockAll(void) {
       mutex_t *mp = ctp->p_mtxlist;
       ctp->p_mtxlist = mp->m_next;
       if (chMtxQueueNotEmptyS(mp)) {
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-        mp->m_cnt = 1;
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+        mp->m_cnt = (cnt_t)1;
 #endif
         thread_t *tp = queue_fifo_remove(&mp->m_queue);
         mp->m_owner = tp;
         mp->m_next = tp->p_mtxlist;
         tp->p_mtxlist = mp;
-        chSchReadyI(tp);
+        (void) chSchReadyI(tp);
       }
       else {
-#if CH_CFG_USE_MUTEXES_RECURSIVE
-        mp->m_cnt = 0;
+#if CH_CFG_USE_MUTEXES_RECURSIVE == TRUE
+        mp->m_cnt = (cnt_t)0;
 #endif
         mp->m_owner = NULL;
       }
@@ -498,6 +507,6 @@ void chMtxUnlockAll(void) {
   chSysUnlock();
 }
 
-#endif /* CH_CFG_USE_MUTEXES */
+#endif /* CH_CFG_USE_MUTEXES == TRUE */
 
 /** @} */

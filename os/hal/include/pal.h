@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -28,7 +25,7 @@
 #ifndef _PAL_H_
 #define _PAL_H_
 
-#if HAL_USE_PAL || defined(__DOXYGEN__)
+#if (HAL_USE_PAL == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -44,7 +41,7 @@
  *          it is guaranteed to be equal to the after-reset state. It is
  *          usually an input state.
  */
-#define PAL_MODE_RESET                  0
+#define PAL_MODE_RESET                  0U
 
 /**
  * @brief   Safe state for <b>unconnected</b> pads.
@@ -53,37 +50,37 @@
  *          @p PAL_MODE_INPUT_PULLDOWN or @p PAL_MODE_OUTPUT_PUSHPULL for
  *          example.
  */
-#define PAL_MODE_UNCONNECTED            1
+#define PAL_MODE_UNCONNECTED            1U
 
 /**
  * @brief   Regular input high-Z pad.
  */
-#define PAL_MODE_INPUT                  2
+#define PAL_MODE_INPUT                  2U
 
 /**
  * @brief   Input pad with weak pull up resistor.
  */
-#define PAL_MODE_INPUT_PULLUP           3
+#define PAL_MODE_INPUT_PULLUP           3U
 
 /**
  * @brief   Input pad with weak pull down resistor.
  */
-#define PAL_MODE_INPUT_PULLDOWN         4
+#define PAL_MODE_INPUT_PULLDOWN         4U
 
 /**
  * @brief   Analog input mode.
  */
-#define PAL_MODE_INPUT_ANALOG           5
+#define PAL_MODE_INPUT_ANALOG           5U
 
 /**
  * @brief   Push-pull output pad.
  */
-#define PAL_MODE_OUTPUT_PUSHPULL        6
+#define PAL_MODE_OUTPUT_PUSHPULL        6U
 
 /**
  * @brief   Open-drain output pad.
  */
-#define PAL_MODE_OUTPUT_OPENDRAIN       7
+#define PAL_MODE_OUTPUT_OPENDRAIN       7U
 /** @} */
 
 /**
@@ -93,12 +90,12 @@
 /**
  * @brief   Logical low state.
  */
-#define PAL_LOW                         0
+#define PAL_LOW                         0U
 
 /**
  * @brief   Logical high state.
  */
-#define PAL_HIGH                        1
+#define PAL_HIGH                        1U
 /** @} */
 
 /*===========================================================================*/
@@ -151,7 +148,7 @@ typedef struct {
  * @return              The bit mask.
  */
 #if !defined(PAL_PORT_BIT) || defined(__DOXYGEN__)
-#define PAL_PORT_BIT(n) ((ioportmask_t)(1 << (n)))
+#define PAL_PORT_BIT(n) ((ioportmask_t)(1U << (n)))
 #endif
 
 /**
@@ -162,7 +159,7 @@ typedef struct {
  * @return                  The group mask.
  */
 #if !defined(PAL_GROUP_MASK) || defined(__DOXYGEN__)
-#define PAL_GROUP_MASK(width) ((ioportmask_t)(1 << (width)) - 1)
+#define PAL_GROUP_MASK(width) ((ioportmask_t)(1U << (width)) - 1U)
 #endif
 
 /**
@@ -218,7 +215,7 @@ typedef struct {
  * @special
  */
 #if !defined(pal_lld_readport) || defined(__DOXYGEN__)
-#define palReadPort(port) ((void)(port), 0)
+#define palReadPort(port) ((void)(port), 0U)
 #else
 #define palReadPort(port) pal_lld_readport(port)
 #endif
@@ -237,7 +234,7 @@ typedef struct {
  * @special
  */
 #if !defined(pal_lld_readlatch) || defined(__DOXYGEN__)
-#define palReadLatch(port) ((void)(port), 0)
+#define palReadLatch(port) ((void)(port), 0U)
 #else
 #define palReadLatch(port) pal_lld_readlatch(port)
 #endif
@@ -408,7 +405,7 @@ typedef struct {
  * @special
  */
 #if !defined(pal_lld_readpad) || defined(__DOXYGEN__)
-#define palReadPad(port, pad) ((palReadPort(port) >> (pad)) & 1)
+#define palReadPad(port, pad) ((palReadPort(port) >> (pad)) & 1U)
 #else
 #define palReadPad(port, pad) pal_lld_readpad(port, pad)
 #endif
@@ -436,7 +433,7 @@ typedef struct {
 #if !defined(pal_lld_writepad) || defined(__DOXYGEN__)
 #define palWritePad(port, pad, bit)                                         \
   palWritePort(port, (palReadLatch(port) & ~PAL_PORT_BIT(pad)) |            \
-                     (((bit) & 1) << pad))
+                     (((bit) & 1U) << pad))
 #else
 #define palWritePad(port, pad, bit) pal_lld_writepad(port, pad, bit)
 #endif
@@ -527,7 +524,7 @@ typedef struct {
  */
 #if !defined(pal_lld_setpadmode) || defined(__DOXYGEN__)
 #define palSetPadMode(port, pad, mode)                                      \
-  palSetGroupMode(port, PAL_PORT_BIT(pad), 0, mode)
+  palSetGroupMode(port, PAL_PORT_BIT(pad), 0U, mode)
 #else
 #define palSetPadMode(port, pad, mode) pal_lld_setpadmode(port, pad, mode)
 #endif
@@ -549,6 +546,6 @@ extern "C" {
 
 #endif /* _PAL_H_ */
 
-#endif /* HAL_USE_PAL */
+#endif /* HAL_USE_PAL == TRUE */
 
 /** @} */

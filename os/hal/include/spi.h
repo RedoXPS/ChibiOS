@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -28,7 +25,7 @@
 #ifndef _SPI_H_
 #define _SPI_H_
 
-#if HAL_USE_SPI || defined(__DOXYGEN__)
+#if (HAL_USE_SPI == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -211,21 +208,7 @@ typedef enum {
  * @name    Low level driver helper macros
  * @{
  */
-#if SPI_USE_WAIT || defined(__DOXYGEN__)
-/**
- * @brief   Waits for operation completion.
- * @details This function waits for the driver to complete the current
- *          operation.
- * @pre     An operation must be running while the function is invoked.
- * @note    No more than one thread can wait on a SPI driver using
- *          this function.
- *
- * @param[in] spip      pointer to the @p SPIDriver object
- *
- * @notapi
- */
-#define _spi_wait_s(spip) osalThreadSuspendS(&(spip)->thread)
-
+#if (SPI_USE_WAIT == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Wakes up the waiting thread.
  *
@@ -239,7 +222,6 @@ typedef enum {
   osalSysUnlockFromISR();                                                   \
 }
 #else /* !SPI_USE_WAIT */
-#define _spi_wait_s(spip)
 #define _spi_wakeup_isr(spip)
 #endif /* !SPI_USE_WAIT */
 
@@ -293,16 +275,16 @@ extern "C" {
   void spiExchange(SPIDriver *spip, size_t n, const void *txbuf, void *rxbuf);
   void spiSend(SPIDriver *spip, size_t n, const void *txbuf);
   void spiReceive(SPIDriver *spip, size_t n, void *rxbuf);
-#endif /* SPI_USE_WAIT */
+#endif
 #if SPI_USE_MUTUAL_EXCLUSION
   void spiAcquireBus(SPIDriver *spip);
   void spiReleaseBus(SPIDriver *spip);
-#endif /* SPI_USE_MUTUAL_EXCLUSION */
+#endif
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HAL_USE_SPI */
+#endif /* HAL_USE_SPI == TRUE */
 
 #endif /* _SPI_H_ */
 

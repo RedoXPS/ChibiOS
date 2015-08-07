@@ -30,19 +30,15 @@
 /* Driver local definitions.                                                 */
 /*===========================================================================*/
 
-#if defined(STM32L1XX)
-#define AHB_EN_MASK     (RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN |          \
-                         RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIODEN |          \
-                         RCC_AHBENR_GPIOEEN | RCC_AHBENR_GPIOHEN)
+#if defined(STM32L0XX) || defined(STM32L1XX)
+#define AHB_EN_MASK     STM32_GPIO_EN_MASK
 #define AHB_LPEN_MASK   AHB_EN_MASK
 
-#elif defined(STM32F0XX)
+#elif defined(STM32F0XX) || defined(STM32F3XX) || defined(STM32F37X)
 #define AHB_EN_MASK     STM32_GPIO_EN_MASK
+#define AHB_LPEN_MASK   0
 
-#elif defined(STM32F3XX) || defined(STM32F37X)
-#define AHB_EN_MASK     STM32_GPIO_EN_MASK
-
-#elif defined(STM32F2XX) || defined(STM32F4XX)
+#elif defined(STM32F2XX) || defined(STM32F4XX) || defined(STM32F7XX)
 #define AHB1_EN_MASK    STM32_GPIO_EN_MASK
 #define AHB1_LPEN_MASK  AHB1_EN_MASK
 
@@ -94,14 +90,17 @@ void _pal_lld_init(const PALConfig *config) {
   /*
    * Enables the GPIO related clocks.
    */
-#if defined(STM32L1XX)
+#if defined(STM32L0XX)
+  RCC->IOPENR |= AHB_EN_MASK;
+  RCC->IOPSMENR |= AHB_LPEN_MASK;
+#elif defined(STM32L1XX)
   rccEnableAHB(AHB_EN_MASK, TRUE);
   RCC->AHBLPENR |= AHB_LPEN_MASK;
 #elif defined(STM32F0XX)
   rccEnableAHB(AHB_EN_MASK, TRUE);
 #elif defined(STM32F3XX) || defined(STM32F37X)
   rccEnableAHB(AHB_EN_MASK, TRUE);
-#elif defined(STM32F2XX) || defined(STM32F4XX)
+#elif defined(STM32F2XX) || defined(STM32F4XX) || defined(STM32F7XX)
   RCC->AHB1ENR   |= AHB1_EN_MASK;
   RCC->AHB1LPENR |= AHB1_LPEN_MASK;
 #endif
@@ -135,6 +134,12 @@ void _pal_lld_init(const PALConfig *config) {
 #endif
 #if STM32_HAS_GPIOI
   initgpio(GPIOI, &config->PIData);
+#endif
+#if STM32_HAS_GPIOJ
+  initgpio(GPIOJ, &config->PJData);
+#endif
+#if STM32_HAS_GPIOK
+  initgpio(GPIOK, &config->PKData);
 #endif
 }
 

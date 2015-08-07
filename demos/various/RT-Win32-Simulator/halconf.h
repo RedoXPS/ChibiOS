@@ -59,6 +59,13 @@
 #endif
 
 /**
+ * @brief   Enables the DAC subsystem.
+ */
+#if !defined(HAL_USE_DAC) || defined(__DOXYGEN__)
+#define HAL_USE_DAC                 FALSE
+#endif
+
+/**
  * @brief   Enables the EXT subsystem.
  */
 #if !defined(HAL_USE_EXT) || defined(__DOXYGEN__)
@@ -77,6 +84,13 @@
  */
 #if !defined(HAL_USE_I2C) || defined(__DOXYGEN__)
 #define HAL_USE_I2C                 FALSE
+#endif
+
+/**
+ * @brief   Enables the I2S subsystem.
+ */
+#if !defined(HAL_USE_I2S) || defined(__DOXYGEN__)
+#define HAL_USE_I2S                 FALSE
 #endif
 
 /**

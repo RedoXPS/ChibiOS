@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -28,7 +25,7 @@
 #ifndef _SDC_H_
 #define _SDC_H_
 
-#if HAL_USE_SDC || defined(__DOXYGEN__)
+#if (HAL_USE_SDC == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -38,27 +35,27 @@
  * @name    SD card types
  * @{
  */
-#define SDC_MODE_CARDTYPE_MASK              0xF /**< @brief Card type mask. */
-#define SDC_MODE_CARDTYPE_SDV11             0
-#define SDC_MODE_CARDTYPE_SDV20             1
-#define SDC_MODE_CARDTYPE_MMC               2
-#define SDC_MODE_HIGH_CAPACITY              0x10
+#define SDC_MODE_CARDTYPE_MASK              0xFU
+#define SDC_MODE_CARDTYPE_SDV11             0U
+#define SDC_MODE_CARDTYPE_SDV20             1U
+#define SDC_MODE_CARDTYPE_MMC               2U
+#define SDC_MODE_HIGH_CAPACITY              0x10U
 /** @} */
 
 /**
  * @name    SDC bus error conditions
  * @{
  */
-#define SDC_NO_ERROR                        0
-#define SDC_CMD_CRC_ERROR                   1
-#define SDC_DATA_CRC_ERROR                  2
-#define SDC_DATA_TIMEOUT                    4
-#define SDC_COMMAND_TIMEOUT                 8
-#define SDC_TX_UNDERRUN                     16
-#define SDC_RX_OVERRUN                      32
-#define SDC_STARTBIT_ERROR                  64
-#define SDC_OVERFLOW_ERROR                  128
-#define SDC_UNHANDLED_ERROR                 0xFFFFFFFF
+#define SDC_NO_ERROR                        0U
+#define SDC_CMD_CRC_ERROR                   1U
+#define SDC_DATA_CRC_ERROR                  2U
+#define SDC_DATA_TIMEOUT                    4U
+#define SDC_COMMAND_TIMEOUT                 8U
+#define SDC_TX_UNDERRUN                     16U
+#define SDC_RX_OVERRUN                      32U
+#define SDC_STARTBIT_ERROR                  64U
+#define SDC_OVERFLOW_ERROR                  128U
+#define SDC_UNHANDLED_ERROR                 0xFFFFFFFFU
 /** @} */
 
 /*===========================================================================*/
@@ -104,6 +101,23 @@
 /*===========================================================================*/
 /* Driver data structures and types.                                         */
 /*===========================================================================*/
+
+/**
+ * @brief   Type of SDIO bus mode.
+ */
+typedef enum {
+  SDC_MODE_1BIT = 0,
+  SDC_MODE_4BIT,
+  SDC_MODE_8BIT
+} sdcbusmode_t;
+
+/**
+ * @brief   Max supported clock.
+ */
+typedef enum {
+  SDC_CLK_25MHz = 0,
+  SDC_CLK_50MHz
+} sdcbusclk_t;
 
 #include "sdc_lld.h"
 
@@ -162,19 +176,19 @@ extern "C" {
   bool sdcConnect(SDCDriver *sdcp);
   bool sdcDisconnect(SDCDriver *sdcp);
   bool sdcRead(SDCDriver *sdcp, uint32_t startblk,
-               uint8_t *buffer, uint32_t n);
+               uint8_t *buf, uint32_t n);
   bool sdcWrite(SDCDriver *sdcp, uint32_t startblk,
-                const uint8_t *buffer, uint32_t n);
+                const uint8_t *buf, uint32_t n);
   sdcflags_t sdcGetAndClearErrors(SDCDriver *sdcp);
   bool sdcSync(SDCDriver *sdcp);
   bool sdcGetInfo(SDCDriver *sdcp, BlockDeviceInfo *bdip);
-  bool sdcErase(SDCDriver *mmcp, uint32_t startblk, uint32_t endblk);
+  bool sdcErase(SDCDriver *sdcp, uint32_t startblk, uint32_t endblk);
   bool _sdc_wait_for_transfer_state(SDCDriver *sdcp);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HAL_USE_SDC */
+#endif /* HAL_USE_SDC == TRUE */
 
 #endif /* _SDC_H_ */
 

@@ -14,6 +14,9 @@
     limitations under the License.
 */
 
+#ifndef _MCUCONF_H_
+#define _MCUCONF_H_
+
 /*
  * STM32F4xx drivers configuration.
  * The following settings override the default settings present in
@@ -86,6 +89,19 @@
 #define STM32_CAN_USE_CAN2                  TRUE
 #define STM32_CAN_CAN1_IRQ_PRIORITY         11
 #define STM32_CAN_CAN2_IRQ_PRIORITY         11
+
+/*
+ * DAC driver system settings.
+ */
+#define STM32_DAC_DUAL_MODE                 FALSE
+#define STM32_DAC_USE_DAC1_CH1              FALSE
+#define STM32_DAC_USE_DAC1_CH2              FALSE
+#define STM32_DAC_DAC1_CH1_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH2_IRQ_PRIORITY     10
+#define STM32_DAC_DAC1_CH1_DMA_PRIORITY     2
+#define STM32_DAC_DAC1_CH2_DMA_PRIORITY     2
+#define STM32_DAC_DAC1_CH1_DMA_STREAM       STM32_DMA_STREAM_ID(1, 5)
+#define STM32_DAC_DAC1_CH2_DMA_STREAM       STM32_DMA_STREAM_ID(1, 6)
 
 /*
  * EXT driver system settings.
@@ -302,3 +318,5 @@
 #define STM32_USB_OTG_THREAD_PRIO           LOWPRIO
 #define STM32_USB_OTG_THREAD_STACK_SIZE     128
 #define STM32_USB_OTGFIFO_FILL_BASEPRI      0
+
+#endif /* _MCUCONF_H_ */

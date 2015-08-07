@@ -34,15 +34,6 @@
 /*===========================================================================*/
 
 /**
- * @brief   Maximum endpoint address.
- */
-#if !STM32_USB_USE_OTG2 || defined(__DOXYGEN__)
-#define USB_MAX_ENDPOINTS                   3
-#else
-#define USB_MAX_ENDPOINTS                   5
-#endif
-
-/**
  * @brief   Status stage handling method.
  */
 #define USB_EP0_STATUS_STAGE                USB_EP0_STATUS_STAGE_SW
@@ -51,6 +42,11 @@
  * @brief   The address can be changed immediately upon packet reception.
  */
 #define USB_SET_ADDRESS_MODE                USB_EARLY_SET_ADDRESS
+
+/**
+ * @brief   Method for set address acknowledge.
+ */
+#define USB_SET_ADDRESS_ACK_HANDLING        USB_SET_ADDRESS_ACK_SW
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -141,6 +137,15 @@
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
+/**
+ * @brief   Maximum endpoint address.
+ */
+#if !STM32_USB_USE_OTG2 || defined(__DOXYGEN__)
+#define USB_MAX_ENDPOINTS                   3
+#else
+#define USB_MAX_ENDPOINTS                   5
+#endif
+
 #if STM32_USB_USE_OTG1 && !STM32_HAS_OTG1
 #error "OTG1 not present in the selected device"
 #endif
@@ -154,12 +159,12 @@
 #endif
 
 #if STM32_USB_USE_OTG1 &&                                                \
-    !CORTEX_IS_VALID_KERNEL_PRIORITY(STM32_USB_OTG1_IRQ_PRIORITY)
+    !OSAL_IRQ_IS_VALID_PRIORITY(STM32_USB_OTG1_IRQ_PRIORITY)
 #error "Invalid IRQ priority assigned to OTG1"
 #endif
 
 #if STM32_USB_USE_OTG2 &&                                                \
-    !CORTEX_IS_VALID_KERNEL_PRIORITY(STM32_USB_OTG2_IRQ_PRIORITY)
+    !OSAL_IRQ_IS_VALID_PRIORITY(STM32_USB_OTG2_IRQ_PRIORITY)
 #error "Invalid IRQ priority assigned to OTG2"
 #endif
 
@@ -171,7 +176,7 @@
 #error "OTG2 RX FIFO size must be a multiple of 4"
 #endif
 
-#if defined(STM32F4XX) || defined(STM32F2XX)
+#if defined(STM32F2XX) || defined(STM32F4XX) || defined(STM32F7XX)
 #define STM32_USBCLK                        STM32_PLL48CLK
 #elif defined(STM32F10X_CL)
 #define STM32_USBCLK                        STM32_OTGFSCLK
@@ -538,7 +543,7 @@ extern "C" {
   void usb_lld_stall_in(USBDriver *usbp, usbep_t ep);
   void usb_lld_clear_out(USBDriver *usbp, usbep_t ep);
   void usb_lld_clear_in(USBDriver *usbp, usbep_t ep);
-  msg_t usb_lld_pump(void *p);
+  void usb_lld_pump(void *p);
 #ifdef __cplusplus
 }
 #endif
