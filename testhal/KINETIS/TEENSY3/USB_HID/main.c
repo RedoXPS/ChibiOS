@@ -493,12 +493,14 @@ int main(void) {
   while (!chThdShouldTerminateX()) {
     chThdSleepMilliseconds(1000);
     palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
-
-    usbPrepareTransmit(&USBD1,DEBUGHID_ENDPOINT,(const uint8_t *)&buff,1);
-    osalSysLockFromISR();
-    usbStartTransmitI(&USBD1, DEBUGHID_ENDPOINT);
-    osalSysUnlockFromISR();
-    if(++buff[0]>'Z') buff[0]='A';
+    if(usbGetDriverStateI(&USBD1) == USB_ACTIVE)
+    {
+      usbPrepareTransmit(&USBD1,DEBUGHID_ENDPOINT,(const uint8_t *)&buff,1);
+      osalSysLockFromISR();
+      usbStartTransmitI(&USBD1, DEBUGHID_ENDPOINT);
+      osalSysUnlockFromISR();
+      if(++buff[0]>'Z') buff[0]='A';
+    }
   }
 
   return 0;
