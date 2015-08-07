@@ -29,7 +29,7 @@
 #ifndef _RTC_LLD_H_
 #define _RTC_LLD_H_
 
-#if HAL_USE_RTC || defined(__DOXYGEN__)
+#if (HAL_USE_RTC == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -41,12 +41,12 @@
 /**
  * @brief   Callback support int the driver.
  */
-#define RTC_SUPPORTS_CALLBACKS      PLATFORM_RTC_HAS_INTERRUPTS
+#define RTC_SUPPORTS_CALLBACKS      TRUE
 
 /**
  * @brief   Number of alarms available.
  */
-#define RTC_ALARMS                  PLATFORM_RTC_NUM_ALARMS
+#define RTC_ALARMS                  2
 
 /**
  * @brief   Presence of a local persistent storage.
@@ -62,6 +62,14 @@
  * @name    PLATFORM configuration options
  * @{
  */
+/**
+ * @brief   RTCD1 driver enable switch.
+ * @details If set to @p TRUE the support for RTC1 is included.
+ * @note    The default is @p FALSE.
+ */
+#if !defined(PLATFORM_RTC_USE_RTC1) || defined(__DOXYGEN__)
+#define PLATFORM_RTC_USE_RTC1                  FALSE
+#endif
 /** @} */
 
 /*===========================================================================*/
@@ -83,6 +91,20 @@
  */
 typedef uint32_t rtcalarm_t;
 
+#if (RTC_SUPPORTS_CALLBACKS == TRUE) || defined(__DOXYGEN__)
+/**
+ * @brief   Type of an RTC event.
+ */
+typedef enum {
+  RTC_EVENT_SECOND = 0                  /** Triggered every second.         */
+} rtcevent_t;
+
+/**
+ * @brief   Type of a generic RTC callback.
+ */
+typedef void (*rtccb_t)(RTCDriver *rtcp, rtcevent_t event);
+#endif
+
 /**
  * @brief   Type of a structure representing an RTC alarm time stamp.
  */
@@ -91,7 +113,7 @@ typedef struct {
   uint32_t                  dummy;
 } RTCAlarm;
 
-#if RTC_HAS_STORAGE || defined(__DOXYGEN__)
+#if (RTC_HAS_STORAGE == TRUE) || defined(__DOXYGEN__)
 /**
  * @extends FileStream
  *
@@ -106,7 +128,7 @@ struct RTCDriverVMT {
  * @brief   Structure representing an RTC driver.
  */
 struct RTCDriver {
-#if RTC_HAS_STORAGE || defined(__DOXYGEN__)
+#if (RTC_HAS_STORAGE == TRUE) || defined(__DOXYGEN__)
   /**
    * @brief Virtual Methods Table.
    */
@@ -124,11 +146,12 @@ struct RTCDriver {
 /* External declarations.                                                    */
 /*===========================================================================*/
 
-#if !defined(__DOXYGEN__)
+#if (PLATFORM_RTC_USE_RTC1 == TRUE) && !defined(__DOXYGEN__)
 extern RTCDriver RTCD1;
-#if RTC_HAS_STORAGE
-extern struct RTCDriverVMT _rtc_lld_vmt;
 #endif
+
+#if (RTC_HAS_STORAGE == TRUE) && !defined(__DOXYGEN__)
+extern struct RTCDriverVMT _rtc_lld_vmt;
 #endif
 
 #ifdef __cplusplus
@@ -145,11 +168,14 @@ extern "C" {
                          rtcalarm_t alarm,
                          RTCAlarm *alarmspec);
 #endif
+#if RTC_SUPPORTS_CALLBACKS == TRUE
+  void rtc_lld_set_callback(RTCDriver *rtcp, rtccb_t callback);
+#endif
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HAL_USE_RTC */
+#endif /* HAL_USE_RTC == TRUE */
 
 #endif /* _RTC_LLD_H_ */
 

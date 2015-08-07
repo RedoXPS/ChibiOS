@@ -19,8 +19,22 @@
 #include "ch.h"
 #include "hal.h"
 
+/**
+ * DMA operation timeout failure handler.
+ */
+static void tmo(void *p) {
+
+  chSysHalt((const char *)p);
+}
+
+/*--------------------------------------------------------------------------*/
+/* ADC related code.                                                        */
+/*--------------------------------------------------------------------------*/
+
 #define ADC_GRP2_NUM_CHANNELS   8
 #define ADC_GRP2_BUF_DEPTH      16
+
+static virtual_timer_t adcvt;
 
 static adcsample_t samples2[ADC_GRP2_NUM_CHANNELS * ADC_GRP2_BUF_DEPTH];
 
@@ -29,6 +43,10 @@ static void adccallback(ADCDriver *adcp, adcsample_t *buffer, size_t n) {
   (void)adcp;
   (void)buffer;
   (void)n;
+
+  chSysLockFromISR();
+  chVTSetI(&adcvt, MS2ST(10), tmo, (void *)"ADC timeout");
+  chSysUnlockFromISR();
 }
 
 static void adcerrorcallback(ADCDriver *adcp, adcerror_t err) {
@@ -60,6 +78,10 @@ static const ADCConversionGroup adcgrpcfg2 = {
   ADC_SQR3_SQ2_N(ADC_CHANNEL_IN12)   | ADC_SQR3_SQ1_N(ADC_CHANNEL_IN11)
 };
 
+/*--------------------------------------------------------------------------*/
+/* SPI related code.                                                        */
+/*--------------------------------------------------------------------------*/
+
 /*
  * Maximum speed SPI configuration (21MHz, CPHA=0, CPOL=0, MSb first).
  */
@@ -70,24 +92,20 @@ static const SPIConfig hs_spicfg = {
   0
 };
 
-static void tmo(void *p) {
-
-  (void)p;
-  chSysHalt("timeout");
-}
-
 /*
  * SPI thread.
  */
 static THD_WORKING_AREA(waSPI1, 1024);
 static THD_WORKING_AREA(waSPI2, 1024);
 static THD_WORKING_AREA(waSPI3, 1024);
-static msg_t spi_thread(void *p) {
+static THD_FUNCTION(spi_thread, p) {
   unsigned i;
   SPIDriver *spip = (SPIDriver *)p;
   virtual_timer_t vt;
   uint8_t txbuf[256];
   uint8_t rxbuf[256];
+
+  chRegSetThreadName("SPI overlord");
 
   chVTObjectInit(&vt);
 
@@ -96,10 +114,10 @@ static msg_t spi_thread(void *p) {
     txbuf[i] = (uint8_t)i;
 
   /* Continuous transmission.*/
-  while (TRUE) {
+  while (true) {
     /* Starts a VT working as watchdog to catch a malfunction in the SPI
        driver.*/
-    chVTSet(&vt, MS2ST(10), tmo, NULL);
+    chVTSet(&vt, MS2ST(10), tmo, (void *)"SPI timeout");
 
     spiExchange(spip, sizeof(txbuf), txbuf, rxbuf);
 
@@ -108,16 +126,20 @@ static msg_t spi_thread(void *p) {
   }
 }
 
+/*--------------------------------------------------------------------------*/
+/* Application code.                                                        */
+/*--------------------------------------------------------------------------*/
+
 /*
  * This is a periodic thread that does absolutely nothing except flashing
- * a LED.
+ * a LED. If the application fails then the LED stops flashing.
  */
 static THD_WORKING_AREA(waThread1, 128);
-static msg_t Thread1(void *arg) {
+static THD_FUNCTION(Thread1, arg) {
 
   (void)arg;
   chRegSetThreadName("blinker");
-  while (TRUE) {
+  while (true) {
     palSetPad(GPIOD, GPIOD_LED3);       /* Orange.  */
     chThdSleepMilliseconds(500);
     palClearPad(GPIOD, GPIOD_LED3);     /* Orange.  */
@@ -148,7 +170,8 @@ int main(void) {
   adcStart(&ADCD1, NULL);
   adcSTM32EnableTSVREFE();
 
-  /* Starts an ADC continuous conversion.*/
+  /* Starts an ADC continuous conversion and its watchdog virtual timer.*/
+  chVTSet(&adcvt, MS2ST(10), tmo, (void *)"ADC timeout");
   adcStartConversion(&ADCD1, &adcgrpcfg2, samples2, ADC_GRP2_BUF_DEPTH);
 
   /* Activating SPI drivers.*/
@@ -173,14 +196,14 @@ int main(void) {
 
   /* Normal main() thread activity, it does continues memory copy operations
      using 2 DMA streams at the lowest priority.*/
-  while (TRUE) {
+  while (true) {
     virtual_timer_t vt;
 
     chVTObjectInit(&vt);
 
     /* Starts a VT working as watchdog to catch a malfunction in the DMA
        driver.*/
-    chVTSet(&vt, MS2ST(10), tmo, NULL);
+    chVTSet(&vt, MS2ST(10), tmo, (void *)"copy timeout");
 
     /* Copy pattern 1.*/
     dmaStartMemCopy(STM32_DMA2_STREAM6,

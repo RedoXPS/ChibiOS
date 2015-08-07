@@ -66,17 +66,6 @@
 
 /** @} */
 
-/**
- * @name    Cortex-M variants
- * @{
- */
-#define CORTEX_M0                       0   /**< @brief Cortex-M0 variant.  */
-#define CORTEX_M0PLUS                   1   /**< @brief Cortex-M0+ variant. */
-#define CORTEX_M1                       10  /**< @brief Cortex-M1 variant.  */
-#define CORTEX_M3                       30  /**< @brief Cortex-M3 variant.  */
-#define CORTEX_M4                       40  /**< @brief Cortex-M4 variant.  */
-/** @} */
-
 /* Inclusion of the Cortex-Mx implementation specific parameters.*/
 #include "cmparams.h"
 
@@ -97,27 +86,6 @@
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
-
-/* The following code is not processed when the file is included from an
-   asm module.*/
-#if !defined(_FROM_ASM_)
-
-/*
- * Inclusion of the appropriate CMSIS header for the selected device.
- */
-#if CORTEX_MODEL == CORTEX_M0
-#include "core_cm0.h"
-#elif CORTEX_MODEL == CORTEX_M0PLUS
-#include "core_cm0plus.h"
-#elif CORTEX_MODEL == CORTEX_M3
-#include "core_cm3.h"
-#elif CORTEX_MODEL == CORTEX_M4
-#include "core_cm4.h"
-#else
-#error "unknown or unsupported Cortex-M model"
-#endif
-
-#endif /* !defined(_FROM_ASM_) */
 
 /*===========================================================================*/
 /* Module data structures and types.                                         */
@@ -179,7 +147,7 @@ struct context {
 /**
  * @brief   Total priority levels.
  */
-#define CORTEX_PRIORITY_LEVELS          (1 << CORTEX_PRIORITY_BITS)
+#define CORTEX_PRIORITY_LEVELS          (1U << CORTEX_PRIORITY_BITS)
 
 /**
  * @brief   Minimum priority level.
@@ -192,25 +160,25 @@ struct context {
  * @brief   Maximum priority level.
  * @details The maximum allowed priority level is always zero.
  */
-#define CORTEX_MAXIMUM_PRIORITY         0
-
-/**
- * @brief   Priority level verification macro.
- */
-#define CORTEX_IS_VALID_PRIORITY(n)                                         \
-  (((n) >= 0) && ((n) < CORTEX_PRIORITY_LEVELS))
-
-/**
- * @brief   Priority level verification macro.
- */
-#define CORTEX_IS_VALID_KERNEL_PRIORITY(n)                                  \
-  (((n) >= CORTEX_MAX_KERNEL_PRIORITY) && ((n) < CORTEX_PRIORITY_LEVELS))
+#define CORTEX_MAXIMUM_PRIORITY         0U
 
 /**
  * @brief   Priority level to priority mask conversion macro.
  */
 #define CORTEX_PRIO_MASK(n)                                                 \
-  ((n) << (8 - CORTEX_PRIORITY_BITS))
+  ((n) << (8U - (unsigned)CORTEX_PRIORITY_BITS))
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_PRIORITY(n)                                       \
+  (((n) >= 0U) && ((n) < CORTEX_PRIORITY_LEVELS))
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_KERNEL_PRIORITY(n)                                \
+  (((n) >= CORTEX_MAX_KERNEL_PRIORITY) && ((n) < CORTEX_PRIORITY_LEVELS))
 
 /*===========================================================================*/
 /* External declarations.                                                    */
@@ -221,21 +189,22 @@ struct context {
 /*===========================================================================*/
 
 /* Includes the sub-architecture-specific part.*/
-#if (CORTEX_MODEL == CORTEX_M0) || (CORTEX_MODEL == CORTEX_M0PLUS) ||       \
-    (CORTEX_MODEL == CORTEX_M1)
+#if (CORTEX_MODEL == 0) || (CORTEX_MODEL == 1)
 #include "chcore_v6m.h"
-#elif (CORTEX_MODEL == CORTEX_M3) || (CORTEX_MODEL == CORTEX_M4)
+#elif (CORTEX_MODEL == 3) || (CORTEX_MODEL == 4) || (CORTEX_MODEL == 7)
 #include "chcore_v7m.h"
+#else
+#error "unknown Cortex-M variant"
 #endif
 
 #if !defined(_FROM_ASM_)
 
 #if CH_CFG_ST_TIMEDELTA > 0
-#if !PORT_USE_ALT_TIMER
+#if PORT_USE_ALT_TIMER == FALSE
 #include "chcore_timer.h"
-#else /* PORT_USE_ALT_TIMER */
+#else /* PORT_USE_ALT_TIMER != FALSE */
 #include "chcore_timer_alt.h"
-#endif /* PORT_USE_ALT_TIMER */
+#endif /* PORT_USE_ALT_TIMER != FALSE */
 #endif /* CH_CFG_ST_TIMEDELTA > 0 */
 
 #endif /* !defined(_FROM_ASM_) */

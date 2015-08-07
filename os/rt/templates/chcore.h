@@ -177,7 +177,17 @@ struct context {
  */
 #define PORT_WA_SIZE(n) (sizeof(struct port_intctx) +                       \
                          sizeof(struct port_extctx) +                       \
-                         (n) + (PORT_INT_REQUIRED_STACK))
+                         ((size_t)(n)) + ((size_t)(PORT_INT_REQUIRED_STACK)))
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_PRIORITY(n) false
+
+/**
+ * @brief   Priority level verification macro.
+ */
+#define PORT_IRQ_IS_VALID_KERNEL_PRIORITY(n) false
 
 /**
  * @brief   IRQ prologue code.

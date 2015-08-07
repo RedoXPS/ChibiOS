@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -273,6 +270,11 @@ typedef struct {
  * @{
  */
 /**
+ * @brief   Priority level verification macro.
+ */
+#define OSAL_IRQ_IS_VALID_PRIORITY(n) CH_IRQ_IS_VALID_KERNEL_PRIORITY(n)
+
+/**
  * @brief   IRQ prologue code.
  * @details This macro must be inserted at the start of all IRQ handlers.
  */
@@ -412,6 +414,26 @@ static inline void osalInit(void) {
 static inline void osalSysHalt(const char *reason) {
 
   chSysHalt(reason);
+}
+
+/**
+ * @brief   Disables interrupts globally.
+ *
+ * @special
+ */
+static inline void osalSysDisable(void) {
+
+  chSysDisable();
+}
+
+/**
+ * @brief   Enables interrupts globally.
+ *
+ * @special
+ */
+static inline void osalSysEnable(void) {
+
+  chSysEnable();
 }
 
 /**
@@ -703,7 +725,7 @@ static inline void osalThreadQueueObjectInit(threads_queue_t *tqp) {
  *                      .
  * @return              The message from @p osalQueueWakeupOneI() or
  *                      @p osalQueueWakeupAllI() functions.
- * @retval RDY_TIMEOUT  if the thread has not been dequeued within the
+ * @retval MSG_TIMEOUT  if the thread has not been dequeued within the
  *                      specified timeout or if the function has been
  *                      invoked with @p TIME_IMMEDIATE as timeout
  *                      specification.

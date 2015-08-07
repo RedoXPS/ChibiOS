@@ -106,8 +106,10 @@
 #define STM32_TIM8_UP_HANDLER       VectorF0
 #define STM32_TIM8_CC_HANDLER       VectorF8
 #define STM32_TIM9_HANDLER          VectorA0
+#define STM32_TIM10_HANDLER         VectorA4 /* Note: same as STM32_TIM1_UP */
 #define STM32_TIM11_HANDLER         VectorA8
 #define STM32_TIM12_HANDLER         VectorEC
+#define STM32_TIM13_HANDLER         VectorF0 /* Note: same as STM32_TIM8_UP */
 #define STM32_TIM14_HANDLER         VectorF4
 
 #define STM32_TIM1_UP_NUMBER        25
@@ -121,8 +123,10 @@
 #define STM32_TIM8_UP_NUMBER        44
 #define STM32_TIM8_CC_NUMBER        46
 #define STM32_TIM9_NUMBER           24
+#define STM32_TIM10_NUMBER          25 /* Note: same as STM32_TIM1_UP */
 #define STM32_TIM11_NUMBER          26
 #define STM32_TIM12_NUMBER          43
+#define STM32_TIM13_NUMBER          44 /* Note: same as STM32_TIM8_UP */
 #define STM32_TIM14_NUMBER          45
 
 /*
@@ -134,6 +138,8 @@
 #define STM32_UART4_HANDLER         Vector110
 #define STM32_UART5_HANDLER         Vector114
 #define STM32_USART6_HANDLER        Vector15C
+#define STM32_UART7_HANDLER         Vector188
+#define STM32_UART8_HANDLER         Vector18C
 
 #define STM32_USART1_NUMBER         37
 #define STM32_USART2_NUMBER         38
@@ -141,6 +147,8 @@
 #define STM32_UART4_NUMBER          52
 #define STM32_UART5_NUMBER          53
 #define STM32_USART6_NUMBER         71
+#define STM32_UART7_NUMBER          82
+#define STM32_UART8_NUMBER          83
 
 /*
  * Ethernet
@@ -153,6 +161,22 @@
 #define STM32_FSMC_HANDLER          Vector100
 
 #define STM32_FSMC_NUMBER           48
+
+/*
+ * LTDC
+ */
+#define STM32_LTDC_EV_HANDLER       Vector1A0
+#define STM32_LTDC_ER_HANDLER       Vector1A4
+
+#define STM32_LTDC_EV_NUMBER        88
+#define STM32_LTDC_ER_NUMBER        89
+
+/*
+ * DMA2D
+ */
+#define STM32_DMA2D_HANDLER         Vector1A8
+
+#define STM32_DMA2D_NUMBER          90
 
 /** @} */
 

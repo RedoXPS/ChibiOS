@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -28,16 +25,16 @@
 #ifndef _MMC_SPI_H_
 #define _MMC_SPI_H_
 
-#if HAL_USE_MMC_SPI || defined(__DOXYGEN__)
+#if (HAL_USE_MMC_SPI == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
 /*===========================================================================*/
 
-#define MMC_CMD0_RETRY              10
-#define MMC_CMD1_RETRY              100
-#define MMC_ACMD41_RETRY            100
-#define MMC_WAIT_DATA               10000
+#define MMC_CMD0_RETRY              10U
+#define MMC_CMD1_RETRY              100U
+#define MMC_ACMD41_RETRY            100U
+#define MMC_WAIT_DATA               10000U
 
 /*===========================================================================*/
 /* Driver pre-compile time settings.                                         */
@@ -64,7 +61,7 @@
 /* Derived constants and error checks.                                       */
 /*===========================================================================*/
 
-#if !HAL_USE_SPI || !SPI_USE_WAIT
+#if (HAL_USE_SPI == FALSE) || (SPI_USE_WAIT == FALSE)
 #error "MMC_SPI driver requires HAL_USE_SPI and SPI_USE_WAIT"
 #endif
 
@@ -191,7 +188,7 @@ extern "C" {
 }
 #endif
 
-#endif /* HAL_USE_MMC_SPI */
+#endif /* HAL_USE_MMC_SPI == TRUE */
 
 #endif /* _MMC_SPI_H_ */
 

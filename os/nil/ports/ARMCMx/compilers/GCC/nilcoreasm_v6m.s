@@ -25,10 +25,6 @@
  * @{
  */
 
-#define _FROM_ASM_
-#include "nilconf.h"
-#include "nilcore.h"
-
 #if !defined(FALSE) || defined(__DOXYGEN__)
 #define FALSE   0
 #endif
@@ -36,6 +32,10 @@
 #if !defined(TRUE) || defined(__DOXYGEN__)
 #define TRUE    1
 #endif
+
+#define _FROM_ASM_
+#include "nilconf.h"
+#include "nilcore.h"
 
 #if !defined(__DOXYGEN__)
 
@@ -62,10 +62,12 @@ _port_switch:
                 mov     r6, r10
                 mov     r7, r11
                 push    {r4, r5, r6, r7}
-                mov r3, sp
-                str r3, [r1, #CONTEXT_OFFSET]
-                ldr r3, [r0, #CONTEXT_OFFSET]
-                mov sp, r3
+
+                mov     r3, sp
+                str     r3, [r1, #CONTEXT_OFFSET]
+                ldr     r3, [r0, #CONTEXT_OFFSET]
+                mov     sp, r3
+
                 pop     {r4, r5, r6, r7}
                 mov     r8, r4
                 mov     r9, r5

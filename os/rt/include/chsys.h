@@ -28,9 +28,21 @@
 #ifndef _CHSYS_H_
 #define _CHSYS_H_
 
+/*lint -sem(chSysHalt, r_no)*/
+
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
+
+/**
+ * @name    Masks of executable integrity checks.
+ * @{
+ */
+#define CH_INTEGRITY_RLIST                  1U
+#define CH_INTEGRITY_VTLIST                 2U
+#define CH_INTEGRITY_REGISTRY               4U
+#define CH_INTEGRITY_PORT                   8U
+/** @} */
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -51,6 +63,42 @@
 /**
  * @name    ISRs abstraction macros
  */
+/**
+ * @brief   Priority level validation macro.
+ * @details This macro determines if the passed value is a valid priority
+ *          level for the underlying architecture.
+ *
+ * @param[in] prio      the priority level
+ * @return              Priority range result.
+ * @retval false        if the priority is invalid or if the architecture
+ *                      does not support priorities.
+ * @retval true         if the priority is valid.
+ */
+#if defined(PORT_IRQ_IS_VALID_PRIORITY) || defined(__DOXYGEN__)
+#define CH_IRQ_IS_VALID_PRIORITY(prio)                                      \
+  PORT_IRQ_IS_VALID_PRIORITY(prio)
+#else
+#define CH_IRQ_IS_VALID_PRIORITY(prio) false
+#endif
+
+/**
+ * @brief   Priority level validation macro.
+ * @details This macro determines if the passed value is a valid priority
+ *          level that cannot preempt the kernel critical zone.
+ *
+ * @param[in] prio      the priority level
+ * @return              Priority range result.
+ * @retval false        if the priority is invalid or if the architecture
+ *                      does not support priorities.
+ * @retval true         if the priority is valid.
+ */
+#if defined(PORT_IRQ_IS_VALID_KERNEL_PRIORITY) || defined(__DOXYGEN__)
+#define CH_IRQ_IS_VALID_KERNEL_PRIORITY(prio)                               \
+  PORT_IRQ_IS_VALID_KERNEL_PRIORITY(prio)
+#else
+#define CH_IRQ_IS_VALID_KERNEL_PRIORITY(prio) false
+#endif
+
 /**
  * @brief   IRQ handler enter code.
  * @note    Usually IRQ handlers functions are also declared naked.
@@ -197,7 +245,7 @@
  *
  * @xclass
  */
-#if PORT_SUPPORTS_RT || defined(__DOXYGEN__)
+#if (PORT_SUPPORTS_RT == TRUE) || defined(__DOXYGEN__)
 #define chSysGetRealtimeCounterX() (rtcnt_t)port_rt_get_counter_value()
 #endif
 
@@ -228,6 +276,7 @@ extern "C" {
 #endif
   void chSysInit(void);
   void chSysHalt(const char *reason);
+  bool chSysIntegrityCheckI(unsigned testmask);
   void chSysTimerHandlerI(void);
   syssts_t chSysGetStatusAndLockX(void);
   void chSysRestoreStatusX(syssts_t sts);
@@ -315,7 +364,8 @@ static inline void chSysUnlock(void) {
      in a critical section not followed by a chSchResceduleS(), this means
      that the current thread has a lower priority than the next thread in
      the ready list.*/
-  chDbgAssert(ch.rlist.r_current->p_prio >= ch.rlist.r_queue.p_next->p_prio,
+  chDbgAssert((ch.rlist.r_queue.p_next == (thread_t *)&ch.rlist.r_queue) ||
+              (ch.rlist.r_current->p_prio >= ch.rlist.r_queue.p_next->p_prio),
               "priority violation, missing reschedule");
 
   port_unlock();
@@ -369,8 +419,9 @@ static inline void chSysUnlockFromISR(void) {
  */
 static inline void chSysUnconditionalLock(void) {
 
-  if (port_irq_enabled(port_get_irq_status()))
+  if (port_irq_enabled(port_get_irq_status())) {
     chSysLock();
+  }
 }
 
 /**
@@ -382,11 +433,12 @@ static inline void chSysUnconditionalLock(void) {
  */
 static inline void chSysUnconditionalUnlock(void) {
 
-  if (!port_irq_enabled(port_get_irq_status()))
+  if (!port_irq_enabled(port_get_irq_status())) {
     chSysUnlock();
+  }
 }
 
-#if !CH_CFG_NO_IDLE_THREAD || defined(__DOXYGEN__)
+#if (CH_CFG_NO_IDLE_THREAD == FALSE) || defined(__DOXYGEN__)
 /**
  * @brief   Returns a pointer to the idle thread.
  * @pre     In order to use this function the option @p CH_CFG_NO_IDLE_THREAD
@@ -403,7 +455,7 @@ static inline thread_t *chSysGetIdleThreadX(void) {
 
   return ch.rlist.r_queue.p_prev;
 }
-#endif /* !CH_CFG_NO_IDLE_THREAD */
+#endif /* CH_CFG_NO_IDLE_THREAD == FALSE */
 
 #endif /* _CHSYS_H_ */
 

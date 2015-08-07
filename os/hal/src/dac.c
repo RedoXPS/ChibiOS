@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -27,7 +24,7 @@
 
 #include "hal.h"
 
-#if HAL_USE_DAC || defined(__DOXYGEN__)
+#if (HAL_USE_DAC == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -74,10 +71,10 @@ void dacObjectInit(DACDriver *dacp) {
   dacp->config = NULL;
 #if DAC_USE_WAIT
   dacp->thread = NULL;
-#endif /* DAC_USE_WAIT */
+#endif
 #if DAC_USE_MUTUAL_EXCLUSION
   osalMutexObjectInit(&dacp->mutex);
-#endif /* DAC_USE_MUTUAL_EXCLUSION */
+#endif
 #if defined(DAC_DRIVER_EXT_INIT_HOOK)
   DAC_DRIVER_EXT_INIT_HOOK(dacp);
 #endif
@@ -87,13 +84,15 @@ void dacObjectInit(DACDriver *dacp) {
  * @brief   Configures and activates the DAC peripheral.
  *
  * @param[in] dacp      pointer to the @p DACDriver object
- * @param[in] config    pointer to the @p DACConfig object
+ * @param[in] config    pointer to the @p DACConfig object, it can be
+ *                      @p NULL if the low level driver implementation
+ *                      supports a default configuration
  *
  * @api
  */
 void dacStart(DACDriver *dacp, const DACConfig *config) {
 
-  osalDbgCheck((dacp != NULL) && (config != NULL));
+  osalDbgCheck(dacp != NULL);
 
   osalSysLock();
 
@@ -129,6 +128,23 @@ void dacStop(DACDriver *dacp) {
   dacp->state = DAC_STOP;
 
   osalSysUnlock();
+}
+
+/**
+ * @brief   Outputs a value directly on a DAC channel.
+ *
+ * @param[in] dacp      pointer to the @p DACDriver object
+ * @param[in] channel   DAC channel number
+ * @param[in] sample    value to be output
+ *
+ * @xclass
+ */
+void dacPutChannelX(DACDriver *dacp, dacchannel_t channel, dacsample_t sample) {
+
+  osalDbgCheck(channel < DAC_MAX_CHANNELS);
+  osalDbgAssert(dacp->state == DAC_READY, "invalid state");
+
+  dac_lld_put_channel(dacp, channel, sample);
 }
 
 /**
@@ -252,7 +268,7 @@ void dacStopConversionI(DACDriver *dacp) {
   }
 }
 
-#if DAC_USE_WAIT || defined(__DOXYGEN__)
+#if (DAC_USE_WAIT == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Performs a DAC conversion.
  * @details Performs a synchronous conversion operation.
@@ -290,9 +306,9 @@ msg_t dacConvert(DACDriver *dacp,
   osalSysUnlock();
   return msg;
 }
-#endif /* DAC_USE_WAIT */
+#endif /* DAC_USE_WAIT == TRUE */
 
-#if DAC_USE_MUTUAL_EXCLUSION || defined(__DOXYGEN__)
+#if (DAC_USE_MUTUAL_EXCLUSION == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Gains exclusive access to the DAC bus.
  * @details This function tries to gain ownership to the DAC bus, if the bus
@@ -326,8 +342,8 @@ void dacReleaseBus(DACDriver *dacp) {
 	
   osalMutexUnlock(&dacp->mutex);
 }
-#endif /* DAC_USE_MUTUAL_EXCLUSION */
+#endif /* DAC_USE_MUTUAL_EXCLUSION == TRUE */
 
-#endif /* HAL_USE_DAC */
+#endif /* HAL_USE_DAC == TRUE */
 
 /** @} */

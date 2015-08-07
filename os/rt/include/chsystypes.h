@@ -63,6 +63,11 @@ typedef uint16_t systime_t;
 typedef struct ch_thread thread_t;
 
 /**
+ * @brief   Type of a thread reference.
+ */
+typedef thread_t * thread_reference_t;
+
+/**
  * @brief   Type of a generic threads single link list, it works like a stack.
  */
 typedef struct ch_threads_list threads_list_t;
@@ -84,7 +89,7 @@ typedef struct ch_ready_list ready_list_t;
 /**
  * @brief   Type of a Virtual Timer callback function.
  */
-typedef void (*vtfunc_t)(void *);
+typedef void (*vtfunc_t)(void *p);
 
 /**
  * @brief   Type of a Virtual Timer structure.

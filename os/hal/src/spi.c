@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -27,7 +24,7 @@
 
 #include "hal.h"
 
-#if HAL_USE_SPI || defined(__DOXYGEN__)
+#if (HAL_USE_SPI == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -72,12 +69,12 @@ void spiObjectInit(SPIDriver *spip) {
 
   spip->state = SPI_STOP;
   spip->config = NULL;
-#if SPI_USE_WAIT
+#if SPI_USE_WAIT == TRUE
   spip->thread = NULL;
-#endif /* SPI_USE_WAIT */
-#if SPI_USE_MUTUAL_EXCLUSION
+#endif
+#if SPI_USE_MUTUAL_EXCLUSION == TRUE
   osalMutexObjectInit(&spip->mutex);
-#endif /* SPI_USE_MUTUAL_EXCLUSION */
+#endif
 #if defined(SPI_DRIVER_EXT_INIT_HOOK)
   SPI_DRIVER_EXT_INIT_HOOK(spip);
 #endif
@@ -175,7 +172,7 @@ void spiUnselect(SPIDriver *spip) {
  */
 void spiStartIgnore(SPIDriver *spip, size_t n) {
 
-  osalDbgCheck((spip != NULL) && (n > 0));
+  osalDbgCheck((spip != NULL) && (n > 0U));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
@@ -203,7 +200,8 @@ void spiStartIgnore(SPIDriver *spip, size_t n) {
 void spiStartExchange(SPIDriver *spip, size_t n,
                       const void *txbuf, void *rxbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) && (rxbuf != NULL) && (txbuf != NULL));
+  osalDbgCheck((spip != NULL) && (n > 0U) &&
+               (rxbuf != NULL) && (txbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
@@ -228,7 +226,7 @@ void spiStartExchange(SPIDriver *spip, size_t n,
  */
 void spiStartSend(SPIDriver *spip, size_t n, const void *txbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) && (txbuf != NULL));
+  osalDbgCheck((spip != NULL) && (n > 0U) && (txbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
@@ -253,7 +251,7 @@ void spiStartSend(SPIDriver *spip, size_t n, const void *txbuf) {
  */
 void spiStartReceive(SPIDriver *spip, size_t n, void *rxbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) && (rxbuf != NULL));
+  osalDbgCheck((spip != NULL) && (n > 0U) && (rxbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
@@ -261,7 +259,7 @@ void spiStartReceive(SPIDriver *spip, size_t n, void *rxbuf) {
   osalSysUnlock();
 }
 
-#if SPI_USE_WAIT || defined(__DOXYGEN__)
+#if (SPI_USE_WAIT == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Ignores data on the SPI bus.
  * @details This synchronous function performs the transmission of a series of
@@ -278,13 +276,13 @@ void spiStartReceive(SPIDriver *spip, size_t n, void *rxbuf) {
  */
 void spiIgnore(SPIDriver *spip, size_t n) {
 
-  osalDbgCheck((spip != NULL) && (n > 0));
+  osalDbgCheck((spip != NULL) && (n > 0U));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
   osalDbgAssert(spip->config->end_cb == NULL, "has callback");
   spiStartIgnoreI(spip, n);
-  _spi_wait_s(spip);
+  (void) osalThreadSuspendS(&spip->thread);
   osalSysUnlock();
 }
 
@@ -309,14 +307,14 @@ void spiIgnore(SPIDriver *spip, size_t n) {
 void spiExchange(SPIDriver *spip, size_t n,
                  const void *txbuf, void *rxbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) &&
+  osalDbgCheck((spip != NULL) && (n > 0U) &&
                (rxbuf != NULL) && (txbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
   osalDbgAssert(spip->config->end_cb == NULL, "has callback");
   spiStartExchangeI(spip, n, txbuf, rxbuf);
-  _spi_wait_s(spip);
+  (void) osalThreadSuspendS(&spip->thread);
   osalSysUnlock();
 }
 
@@ -338,13 +336,13 @@ void spiExchange(SPIDriver *spip, size_t n,
  */
 void spiSend(SPIDriver *spip, size_t n, const void *txbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) && (txbuf != NULL));
+  osalDbgCheck((spip != NULL) && (n > 0U) && (txbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
   osalDbgAssert(spip->config->end_cb == NULL, "has callback");
   spiStartSendI(spip, n, txbuf);
-  _spi_wait_s(spip);
+  (void) osalThreadSuspendS(&spip->thread);
   osalSysUnlock();
 }
 
@@ -366,18 +364,18 @@ void spiSend(SPIDriver *spip, size_t n, const void *txbuf) {
  */
 void spiReceive(SPIDriver *spip, size_t n, void *rxbuf) {
 
-  osalDbgCheck((spip != NULL) && (n > 0) && (rxbuf != NULL));
+  osalDbgCheck((spip != NULL) && (n > 0U) && (rxbuf != NULL));
 
   osalSysLock();
   osalDbgAssert(spip->state == SPI_READY, "not ready");
   osalDbgAssert(spip->config->end_cb == NULL, "has callback");
   spiStartReceiveI(spip, n, rxbuf);
-  _spi_wait_s(spip);
+  (void) osalThreadSuspendS(&spip->thread);
   osalSysUnlock();
 }
-#endif /* SPI_USE_WAIT */
+#endif /* SPI_USE_WAIT == TRUE */
 
-#if SPI_USE_MUTUAL_EXCLUSION || defined(__DOXYGEN__)
+#if (SPI_USE_MUTUAL_EXCLUSION == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Gains exclusive access to the SPI bus.
  * @details This function tries to gain ownership to the SPI bus, if the bus
@@ -411,8 +409,8 @@ void spiReleaseBus(SPIDriver *spip) {
 
   osalMutexUnlock(&spip->mutex);
 }
-#endif /* SPI_USE_MUTUAL_EXCLUSION */
+#endif /* SPI_USE_MUTUAL_EXCLUSION == TRUE */
 
-#endif /* HAL_USE_SPI */
+#endif /* HAL_USE_SPI == TRUE */
 
 /** @} */

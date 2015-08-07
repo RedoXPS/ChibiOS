@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -27,7 +24,7 @@
 
 #include "hal.h"
 
-#if HAL_USE_SERIAL || defined(__DOXYGEN__)
+#if (HAL_USE_SERIAL == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -82,14 +79,14 @@ static msg_t gett(void *ip, systime_t timeout) {
   return iqGetTimeout(&((SerialDriver *)ip)->iqueue, timeout);
 }
 
-static size_t writet(void *ip, const uint8_t *bp, size_t n, systime_t time) {
+static size_t writet(void *ip, const uint8_t *bp, size_t n, systime_t timeout) {
 
-  return oqWriteTimeout(&((SerialDriver *)ip)->oqueue, bp, n, time);
+  return oqWriteTimeout(&((SerialDriver *)ip)->oqueue, bp, n, timeout);
 }
 
-static size_t readt(void *ip, uint8_t *bp, size_t n, systime_t time) {
+static size_t readt(void *ip, uint8_t *bp, size_t n, systime_t timeout) {
 
-  return iqReadTimeout(&((SerialDriver *)ip)->iqueue, bp, n, time);
+  return iqReadTimeout(&((SerialDriver *)ip)->iqueue, bp, n, timeout);
 }
 
 static const struct SerialDriverVMT vmt = {
@@ -237,6 +234,6 @@ msg_t sdRequestDataI(SerialDriver *sdp) {
   return b;
 }
 
-#endif /* HAL_USE_SERIAL */
+#endif /* HAL_USE_SERIAL == TRUE */
 
 /** @} */

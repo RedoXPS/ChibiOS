@@ -28,7 +28,7 @@
 #ifndef _CHSEM_H_
 #define _CHSEM_H_
 
-#if CH_CFG_USE_SEMAPHORES || defined(__DOXYGEN__)
+#if (CH_CFG_USE_SEMAPHORES == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -49,7 +49,7 @@
 /**
  * @brief   Semaphore structure.
  */
-typedef struct semaphore {
+typedef struct ch_semaphore {
   threads_queue_t       s_queue;    /**< @brief Queue of the threads sleeping
                                                 on this semaphore.          */
   cnt_t                 s_cnt;      /**< @brief The semaphore counter.      */
@@ -153,7 +153,7 @@ static inline cnt_t chSemGetCounterI(semaphore_t *sp) {
   return sp->s_cnt;
 }
 
-#endif /* CH_CFG_USE_SEMAPHORES */
+#endif /* CH_CFG_USE_SEMAPHORES == TRUE */
 
 #endif /* _CHSEM_H_ */
 

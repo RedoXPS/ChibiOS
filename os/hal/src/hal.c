@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -64,64 +61,69 @@ void halInit(void) {
   /* Platform low level initializations.*/
   hal_lld_init();
 
-#if HAL_USE_PAL || defined(__DOXYGEN__)
+#if (HAL_USE_PAL == TRUE) || defined(__DOXYGEN__)
   palInit(&pal_default_config);
 #endif
-#if HAL_USE_ADC || defined(__DOXYGEN__)
+#if (HAL_USE_ADC == TRUE) || defined(__DOXYGEN__)
   adcInit();
 #endif
-#if HAL_USE_CAN || defined(__DOXYGEN__)
+#if (HAL_USE_CAN == TRUE) || defined(__DOXYGEN__)
   canInit();
 #endif
-#if HAL_USE_EXT || defined(__DOXYGEN__)
+#if (HAL_USE_DAC == TRUE) || defined(__DOXYGEN__)
+  dacInit();
+#endif
+#if (HAL_USE_EXT == TRUE) || defined(__DOXYGEN__)
   extInit();
 #endif
-#if HAL_USE_GPT || defined(__DOXYGEN__)
+#if (HAL_USE_GPT == TRUE) || defined(__DOXYGEN__)
   gptInit();
 #endif
-#if HAL_USE_I2C || defined(__DOXYGEN__)
+#if (HAL_USE_I2C == TRUE) || defined(__DOXYGEN__)
   i2cInit();
 #endif
-#if HAL_USE_I2S || defined(__DOXYGEN__)
+#if (HAL_USE_I2S == TRUE) || defined(__DOXYGEN__)
   i2sInit();
 #endif
-#if HAL_USE_ICU || defined(__DOXYGEN__)
+#if (HAL_USE_ICU == TRUE) || defined(__DOXYGEN__)
   icuInit();
 #endif
-#if HAL_USE_MAC || defined(__DOXYGEN__)
+#if (HAL_USE_MAC == TRUE) || defined(__DOXYGEN__)
   macInit();
 #endif
-#if HAL_USE_PWM || defined(__DOXYGEN__)
+#if (HAL_USE_PWM == TRUE) || defined(__DOXYGEN__)
   pwmInit();
 #endif
-#if HAL_USE_SERIAL || defined(__DOXYGEN__)
+#if (HAL_USE_SERIAL == TRUE) || defined(__DOXYGEN__)
   sdInit();
 #endif
-#if HAL_USE_SDC || defined(__DOXYGEN__)
+#if (HAL_USE_SDC == TRUE) || defined(__DOXYGEN__)
   sdcInit();
 #endif
-#if HAL_USE_SPI || defined(__DOXYGEN__)
+#if (HAL_USE_SPI == TRUE) || defined(__DOXYGEN__)
   spiInit();
 #endif
-#if HAL_USE_UART || defined(__DOXYGEN__)
+#if (HAL_USE_UART == TRUE) || defined(__DOXYGEN__)
   uartInit();
 #endif
-#if HAL_USE_USB || defined(__DOXYGEN__)
+#if (HAL_USE_USB == TRUE) || defined(__DOXYGEN__)
   usbInit();
 #endif
-#if HAL_USE_MMC_SPI || defined(__DOXYGEN__)
+#if (HAL_USE_MMC_SPI == TRUE) || defined(__DOXYGEN__)
   mmcInit();
 #endif
-#if HAL_USE_SERIAL_USB || defined(__DOXYGEN__)
+#if (HAL_USE_SERIAL_USB == TRUE) || defined(__DOXYGEN__)
   sduInit();
 #endif
-#if HAL_USE_RTC || defined(__DOXYGEN__)
+#if (HAL_USE_RTC == TRUE) || defined(__DOXYGEN__)
   rtcInit();
 #endif
 
   /* Community driver overlay initialization.*/
-#if HAL_USE_COMMUNITY || defined(__DOXYGEN__)
+#if defined(HAL_USE_COMMUNITY) || defined(__DOXYGEN__)
+#if (HAL_USE_COMMUNITY == TRUE) || defined(__DOXYGEN__)
   halCommunityInit();
+#endif
 #endif
 
   /* Board specific initialization.*/

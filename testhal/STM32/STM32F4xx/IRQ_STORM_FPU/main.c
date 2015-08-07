@@ -45,7 +45,7 @@ static bool saturated;
  * Test worker thread.
  */
 static THD_WORKING_AREA(waWorkerThread, 128);
-static msg_t WorkerThread(void *arg) {
+static THD_FUNCTION(WorkerThread, arg) {
 
   (void)arg;
 
@@ -67,7 +67,7 @@ static msg_t WorkerThread(void *arg) {
  * Test periodic thread.
  */
 static THD_WORKING_AREA(waPeriodicThread, 128);
-static msg_t PeriodicThread(void *arg) {
+static THD_FUNCTION(PeriodicThread, arg) {
 
   (void)arg;
 
@@ -123,7 +123,7 @@ static void gpt3cb(GPTDriver *gptp) {
 }
 
 /*
- * GPT2 configuration.
+ * GPT4 configuration.
  */
 static const GPTConfig gpt4cfg = {
   1000000,  /* 1MHz timer clock.*/
@@ -142,6 +142,21 @@ static const GPTConfig gpt3cfg = {
   0
 };
 
+CH_FAST_IRQ_HANDLER(STM32_TIM1_UP_HANDLER) {
+  float f1, f2, f3, f4, f5;
+
+  TIM1->SR = 0;
+
+  f1 = ff1(3.0f);
+  f2 = ff1(4.0f);
+  f3 = ff1(5.0f);
+  f5 = f1 + f2 + f3;
+  f4 = ff1(4.0f);
+  f5 = ff2(f5, f4, f5, f4);
+  if (f5 != 256.0f) {
+    chSysHalt("float corrupion #5");
+  }
+}
 
 /*===========================================================================*/
 /* Generic demo code.                                                        */
@@ -203,13 +218,24 @@ int main(void) {
   chSysInit();
 
   /*
-   * Prepares the Serial driver 2 and GPT drivers 2 and 3.
+   * Prepares the Serial driver 2 and GPT drivers 4 and 3.
    */
   sdStart(&SD2, NULL);          /* Default is 38400-8-N-1.*/
   palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
   gptStart(&GPTD4, &gpt4cfg);
   gptStart(&GPTD3, &gpt3cfg);
+
+  /*
+   * Enabling TIM1 as a fast interrupts source.
+   */
+  rccEnableTIM1(false);
+  nvicEnableVector(STM32_TIM1_UP_NUMBER, 0);
+  TIM1->ARR  = 10000;
+  TIM1->PSC  = 0;
+  TIM1->CNT  = 0;
+  TIM1->DIER = TIM_DIER_UIE;
+  TIM1->CR1  = TIM_CR1_CEN;
 
   /*
    * Initializes the worker threads.
@@ -307,7 +333,7 @@ int main(void) {
   /*
    * Normal main() thread activity, nothing in this test.
    */
-  while (TRUE) {
+  while (true) {
     chThdSleepMilliseconds(5000);
   }
 }
