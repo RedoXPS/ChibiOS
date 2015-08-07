@@ -34,7 +34,7 @@
 /**
  * @brief   Maximum endpoint address.
  */
-#define USB_MAX_ENDPOINTS                   4
+#define USB_MAX_ENDPOINTS                   15
 
 /**
  * @brief   Status stage handling method.
@@ -66,6 +66,9 @@
 #define KINETIS_USB_USB0_IRQ_PRIORITY      5
 #endif
 
+#if !defined(KINETIS_USB_ENDPOINTS) || defined(__DOXYGEN__)
+  #define KINETIS_USB_ENDPOINTS USB_MAX_ENDPOINTS+1
+#endif
 
 /*===========================================================================*/
 /* Derived constants and error checks.                                       */

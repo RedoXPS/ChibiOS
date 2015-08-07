@@ -277,18 +277,19 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
     /* Get the correct BDT entry */
     uint8_t odd_even = (stat & USBx_STAT_ODD_MASK) >> USBx_STAT_ODD_SHIFT;
     uint8_t tx_rx    = (stat & USBx_STAT_TX_MASK) >> USBx_STAT_TX_SHIFT;
-    bdt_t *bd = (bdt_t*)&_bdt[BDT_INDEX(ep,tx_rx,odd_even)];
+    bd_t *bd = (bd_t*)&_bdt[BDT_INDEX(ep,tx_rx,odd_even)];
 
     /* Update the ODD/EVEN state for RX */
     if(tx_rx == RX && epc->out_state != NULL)
       epc->out_state->odd_even = odd_even;
 
+//    sdPut(&SD1,' ');
 //    sdPut(&SD1,'0'+ep);
     switch(BDT_TOK_PID(bd->desc))
     {
       case BDT_PID_SETUP:                                              // SETUP
       {
-//             sdPut(&SD1,',');
+//        sdPut(&SD1,'s');
         /* Clear any pending IN stuff */
         _bdt[BDT_INDEX(ep, TX, EVEN)].desc = 0;
         _bdt[BDT_INDEX(ep, TX,  ODD)].desc = 0;
