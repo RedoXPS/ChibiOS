@@ -39,7 +39,12 @@
 /**
  * @brief   Status stage handling method.
  */
-//#define USB_EP0_STATUS_STAGE                USB_EP0_STATUS_STAGE_SW
+#define USB_EP0_STATUS_STAGE                USB_EP0_STATUS_STAGE_SW
+
+/**
+ * @brief   Address ack handling
+ */
+#define USB_SET_ADDRESS_ACK_HANDLING        USB_SET_ADDRESS_ACK_SW
 
 /**
  * @brief   This device requires the address change after the status packet.
@@ -83,7 +88,7 @@
 #endif
 
 #if KINETIS_USB_USE_USB0 &&                                                   \
-    !CORTEX_IS_VALID_KERNEL_PRIORITY(KINETIS_USB_USB0_IRQ_PRIORITY)
+    !OSAL_IRQ_IS_VALID_PRIORITY(KINETIS_USB_USB0_IRQ_PRIORITY)
 #error "Invalid IRQ priority assigned to KINETIS_USB_USB0_IRQ_PRIORITY"
 #endif
 

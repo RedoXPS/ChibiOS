@@ -128,7 +128,8 @@ ASMSRC = $(PORTASM)
 
 INCDIR = $(PORTINC) $(KERNINC) $(TESTINC) \
          $(HALINC) $(OSALINC) $(PLATFORMINC) $(BOARDINC) \
-         $(CHIBIOS)/os/various
+         $(CHIBIOS)/os/various \
+         $(CHIBIOS)/os/hal/lib/streams
 
 #
 # Project, sources and paths

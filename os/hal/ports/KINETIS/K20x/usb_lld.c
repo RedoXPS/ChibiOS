@@ -162,7 +162,7 @@ void usb_packet_transmit(USBDriver *usbp, usbep_t ep, size_t n)
   if (n > (size_t)epc->in_maxsize)
     n = (size_t)epc->in_maxsize;
 
-  chprintf((BaseSequentialStream *)&SD1,">%d",n,epc->in_maxsize);
+//  chprintf((BaseSequentialStream *)&SD1,">%d",n,epc->in_maxsize);
   if (isp->txqueued)
   {
 //    sdPut(&SD1,'>');
@@ -209,7 +209,7 @@ void usb_packet_receive(USBDriver *usbp, usbep_t ep, size_t n)
   if (n > (size_t)epc->out_maxsize)
     n = (size_t)epc->out_maxsize;
 
-    chprintf((BaseSequentialStream *)&SD1,"<%d", n,epc->out_maxsize);
+//    chprintf((BaseSequentialStream *)&SD1,"<%d", n,epc->out_maxsize);
   if (osp->rxqueued)
   {
 //    sdPut(&SD1,'<');
@@ -310,7 +310,7 @@ OSAL_IRQ_HANDLER(KINETIS_USB_IRQ_VECTOR) {
         if(epc->in_state == NULL)
           break;
         /* Special case for SetAddress for EP0 */
-        if(ep == 0 && usbFetchWord(usbp->setup) == 0x0500)
+        if(ep == 0 && (((uint16_t)usbp->setup[0]<<8)|usbp->setup[1]) == 0x0500)
         {
 //          sdPut(&SD1,'a');
           usbp->address = usbp->setup[2];
