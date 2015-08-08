@@ -120,7 +120,7 @@ static const uint8_t vcom_configuration_descriptor_data[67] = {
                          0x00,          /* bInterfaceProtocol (CDC section
                                            4.7).                            */
                          0x00),         /* iInterface.                      */
-  /* Endpoint 3 Descriptor.*/
+  /* Endpoint 1 Descriptor.*/
   USB_DESC_ENDPOINT     (USBD1_DATA_AVAILABLE_EP,       /* bEndpointAddress.*/
                          0x02,          /* bmAttributes (Bulk).             */
                          0x0040,        /* wMaxPacketSize.                  */
