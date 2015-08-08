@@ -414,7 +414,7 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 bool hidHandlerHookCB(USBDriver *usbp)
 {
 //  chprintf((BaseSequentialStream *)&SD1,"=%X",*(uint16_t*)usbp->setup);
-  switch(usbFetchWord(usbp->setup))
+  switch(((uint16_t)usbp->setup[1]<<8)|usbp->setup[0])
   {
     case 0x0A21: /* HID SET_IDLE - HID1_11.pdf p52, 7.2.4 */
 //      sdPut(&SD1,'M');
@@ -425,7 +425,7 @@ bool hidHandlerHookCB(USBDriver *usbp)
       const USBDescriptor *dp = get_hid_descriptor(usbp,
                                     usbp->setup[3], // Type
                                     usbp->setup[2], // Index
-                                    usbFetchWord(&usbp->setup[4])); // Interface
+                                    (((uint16_t)usbp->setup[5]<<8)|usbp->setup[4])); // Interface
       if (dp == NULL)
         return false;
       usbSetupTransfer(usbp, (uint8_t *)dp->ud_string, dp->ud_size, NULL);
