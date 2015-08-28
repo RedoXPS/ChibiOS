@@ -169,8 +169,7 @@ static void serve_interrupt(I2CDriver *i2cp) {
 
   if (i2cp->errors != I2C_NO_ERROR)
     _i2c_wakeup_error_isr(i2cp);
-
-  if (i2cp->intstate == STATE_STOP)
+  else if (i2cp->intstate == STATE_STOP)
     _i2c_wakeup_isr(i2cp);
 }
 
@@ -191,8 +190,7 @@ OSAL_IRQ_HANDLER(KINETIS_I2C0_IRQ_VECTOR) {
 
 #if KINETIS_I2C_USE_I2C1 || defined(__DOXYGEN__)
 
-/* FIXME: KL2x has I2C1 on Vector64; K2x don't have I2C1! */
-OSAL_IRQ_HANDLER(Vector64) {
+OSAL_IRQ_HANDLER(KINETIS_I2C1_IRQ_VECTOR) {
 
   OSAL_IRQ_PROLOGUE();
   serve_interrupt(&I2CD2);
@@ -317,21 +315,20 @@ static inline msg_t _i2c_txrx_timeout(I2CDriver *i2cp, i2caddr_t addr,
   i2cp->rxidx = 0;
 
   /* send START */
-  i2cp->i2c->C1 |= I2Cx_C1_MST;
-  i2cp->i2c->C1 |= I2Cx_C1_TX;
-
+  do {
+    i2cp->i2c->C1 |= I2Cx_C1_MST;
+    i2cp->i2c->C1 |= I2Cx_C1_TX;
   /* FIXME: should not use busy waiting! */
-  while (!(i2cp->i2c->S & I2Cx_S_BUSY));
+  } while (!(i2cp->i2c->S & I2Cx_S_BUSY));
 
   i2cp->i2c->D = addr << 1 | op;
 
-  msg = osalThreadSuspendTimeoutS(&i2cp->thread, TIME_INFINITE);
+  msg = osalThreadSuspendTimeoutS(&i2cp->thread, timeout);
 
-  /* FIXME */
-  //if (i2cp->i2c->S & I2Cx_S_RXAK)
-  //  i2cp->errors |= I2C_ACK_FAILURE;
+  if (i2cp->i2c->S & I2Cx_S_RXAK)
+    i2cp->errors |= I2C_ACK_FAILURE;
 
-  if (msg == MSG_OK && txbuf != NULL && rxbuf != NULL) {
+  if (msg == MSG_OK && txbuf != NULL && rxbuf != NULL && i2cp->errors == I2C_NO_ERROR) {
     i2cp->i2c->C1 |= I2Cx_C1_RSTA;
     /* FIXME */
     while (!(i2cp->i2c->S & I2Cx_S_BUSY));
@@ -339,12 +336,12 @@ static inline msg_t _i2c_txrx_timeout(I2CDriver *i2cp, i2caddr_t addr,
     i2cp->intstate = STATE_DUMMY;
     i2cp->i2c->D = i2cp->addr << 1 | 1;
 
-    msg = osalThreadSuspendTimeoutS(&i2cp->thread, TIME_INFINITE);
+    msg = osalThreadSuspendTimeoutS(&i2cp->thread, timeout);
   }
-
+  else if(msg == MSG_TIMEOUT) {
+    i2cp->errors |= I2C_TIMEOUT;
+  }
   i2cp->i2c->C1 &= ~(I2Cx_C1_TX | I2Cx_C1_MST);
-  /* FIXME */
-  while (i2cp->i2c->S & I2Cx_S_BUSY);
 
   return msg;
 }

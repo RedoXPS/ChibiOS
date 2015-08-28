@@ -54,6 +54,8 @@
  * @{
  */
 
+/* EXT attributes.*/
+
 #define KINETIS_PORTA_IRQ_VECTOR    VectorE0
 #define KINETIS_PORTB_IRQ_VECTOR    VectorE4
 #define KINETIS_PORTC_IRQ_VECTOR    VectorE8
@@ -62,11 +64,11 @@
 
 /* ADC attributes.*/
 #define KINETIS_HAS_ADC0            TRUE
-#define KINETIS_ADC0_IRC_VECTOR     Vector98
+#define KINETIS_ADC0_IRQ_VECTOR     Vector98
 
 /* I2C attributes.*/
 #define KINETIS_HAS_I2C0            TRUE
-#define KINETIS_I2C0_IRQ_VECTOR     VectorA0
+#define KINETIS_I2C0_IRQ_VECTOR     Vector6C
 
 /* Serial attributes */
 #define KINETIS_HAS_SERIAL0         TRUE
@@ -77,13 +79,14 @@
 #define KINETIS_SERIAL2_IRQ_VECTOR  Vector90
 
 /* FlexTimer attributes */
+#define KINETIS_HAS_FTM0            TRUE
 #define KINETIS_FTM0_CHANNELS 8
+#define KINETIS_HAS_FTM1            TRUE
 #define KINETIS_FTM1_CHANNELS 2
-#define KINETIS_FTM2_CHANNELS 2
 
-#define KINETIS_FTM0_IRQ_VECTOR     Vector138
-#define KINETIS_FTM1_IRQ_VECTOR     Vector13C
-#define KINETIS_FTM2_IRQ_VECTOR     Vector140
+#define KINETIS_FTM0_IRQ_VECTOR     VectorA4
+#define KINETIS_FTM1_IRQ_VECTOR     VectorA8
+
 
 /* GPT */
 #define KINETIS_PIT0_HANDLER        VectorB8

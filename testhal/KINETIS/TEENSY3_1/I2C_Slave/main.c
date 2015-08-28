@@ -14,40 +14,51 @@
     limitations under the License.
 */
 #include "hal.h"
-#include "chprintf.h"
 
-static uint8_t i2cOk = false;
+#include "i2c_slave.h"
 
-static THD_WORKING_AREA(waThread1, 64);
-static THD_FUNCTION(Thread1, arg) {
+static uint8_t _i2cs_rx[16],_i2cs_tx[16];
 
-  (void)arg;
-  chRegSetThreadName("Blinker");
-  while (TRUE) {
-    if (i2cOk) {
-      palTogglePad(IOPORT3, PORTC_TEENSY_PIN13);
-      i2cOk=0;
-    }
-    chThdSleepMilliseconds(10);
-  }
+void start_cb(I2CSlaveDriver *i2cp,uint8_t c)
+{
+  (void)i2cp;
+  (void)c;
 }
 
-static I2CConfig i2ccfg = {
-  400000
-};
+void endrx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
+{
+  (void)i2cp;
+  uint8_t i;
+  for(i=0;i<n;i++)
+  {
+    _i2cs_tx[i] = buf[n-1-i];
+  }
+  _i2cs_tx[2]++;
+  i2cp->txbytes=n;
+}
 
-static SerialConfig sercfg = {
-  115200
+void endtx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
+{
+  (void)i2cp;
+  (void)buf;
+  (void)n;
+}
+
+static I2CSlaveConfig i2cscfg = {
+  400000,
+  0x21,
+  start_cb,   // Start
+  //~ NULL,   // Rx Byte
+  endrx_cb,   // Rx End
+  //~ NULL,   // Tx Byte
+  endtx_cb,   // Tx End
+  //~ NULL,   // Error
 };
 
 /*
  * Application entry point.
  */
 int main(void) {
-
-  uint8_t tx[8], rx[8];
-  uint16_t i=0;
-
   /*
    * System initializations.
    * - HAL initialization, this also initializes the configured device drivers
@@ -58,25 +69,20 @@ int main(void) {
   halInit();
   chSysInit();
 
-  sdStart(&SD1,&sercfg);
+  i2cSlaveInit();
+  i2cSlaveObjectInit(&I2CSD1);
+
   palSetPadMode(IOPORT2, 0, PAL_MODE_ALTERNATIVE_2);
   PORTB->PCR[0] |= PORTx_PCRn_ODE;
   palSetPadMode(IOPORT2, 1, PAL_MODE_ALTERNATIVE_2);
   PORTB->PCR[1] |= PORTx_PCRn_ODE;
-  i2cStart(&I2CD1, &i2ccfg);
+  i2cSlaveStart(&I2CSD1, &i2cscfg);
 
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
-  chThdSleepMilliseconds(1000); // Let the Slaves complete their init
+  i2cSlaveSetRxBuffer(&I2CSD1,_i2cs_rx,16);
+  i2cSlaveSetTxBuffer(&I2CSD1,_i2cs_tx,16);
+
   while (1) {
-    tx[0] = 0x10; tx[1] = 0x02;
-    rx[0] = 0x00;
-    i2cMasterTransmitTimeout(&I2CD1, 0x21, tx, 2, rx, 2, TIME_INFINITE);
-    i2cOk = (rx[0] == tx[1]) ?  0x10: 0x00;
-    rx[0] = 0x00;
-    i2cMasterTransmitTimeout(&I2CD1, 0x22, tx, 2, rx, 2, TIME_INFINITE);
-    i2cOk |= (rx[0] == tx[1]) ? 0x01 : 0x00;
-    chprintf((BaseSequentialStream *)&SD1,"%4X - %02X\r\n",i++,i2cOk);
-    chThdSleepMilliseconds(50);
-
+    chThdSleepMilliseconds(1000);
+    palTogglePad(GPIOC, PORTC_TEENSY_PIN13);
   }
 }

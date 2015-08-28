@@ -1897,15 +1897,17 @@ typedef struct {
 /*                                                              */
 /****************************************************************/
 /***********  Bits definition for I2Cx_A1 register  *************/
-#define I2Cx_A1_AD                   ((uint8_t)0xFE)    /*!< Address [7:1] */
-
-#define I2Cx_A1_AD_SHIT              1
+#define I2Cx_A1_AD_MASK               ((uint8_t)0xFE)    /*!< Address [7:1] */
+#define I2Cx_A1_AD_SHIFT              1
+#define I2Cx_A1_AD(x)                 ((uint8_t)(((uint8_t)(x) << I2Cx_A1_AD_SHIFT) & I2Cx_A1_AD_MASK))
 
 /***********  Bits definition for I2Cx_F register  **************/
-#define I2Cx_F_MULT                  ((uint8_t)0xC0)    /*!< Multiplier factor */
-#define I2Cx_F_ICR                   ((uint8_t)0x3F)    /*!< Clock rate */
+#define I2Cx_F_MULT_MASK                  ((uint8_t)0xC0)    /*!< Multiplier factor */
+#define I2Cx_F_ICR_MASK                   ((uint8_t)0x3F)    /*!< Clock rate */
 
+#define I2Cx_F_ICR(x)               ((uint8_t)((uint8_t)(x) & I2Cx_F_ICR_MASK))
 #define I2Cx_F_MULT_SHIFT            5
+#define I2Cx_F_MULT(x)                ((uint8_t)(((uint8_t)(x) << I2Cx_F_MULT_SHIFT) & I2Cx_F_MULT_MASK))
 
 /***********  Bits definition for I2Cx_C1 register  *************/
 #define I2Cx_C1_IICEN                ((uint8_t)0x80)    /*!< I2C Enable */

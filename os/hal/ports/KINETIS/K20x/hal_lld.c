@@ -207,6 +207,7 @@ void k20x_clock_init(void) {
                  SIM_CLKDIV1_OUTDIV2(KINETIS_CLKDIV1_OUTDIV2-1) |
                  SIM_CLKDIV1_OUTDIV4(KINETIS_CLKDIV1_OUTDIV4-1);
   SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(0);
+
   SIM->SOPT2 = SIM_SOPT2_PLLFLLSEL;
 
   /* Switch to PLL as clock source */

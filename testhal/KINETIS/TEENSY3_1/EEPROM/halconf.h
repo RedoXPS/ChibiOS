@@ -76,7 +76,7 @@
  * @brief   Enables the I2C subsystem.
  */
 #if !defined(HAL_USE_I2C) || defined(__DOXYGEN__)
-#define HAL_USE_I2C                 TRUE
+#define HAL_USE_I2C                 FALSE
 #endif
 
 /**
@@ -132,7 +132,7 @@
  * @brief   Enables the SERIAL subsystem.
  */
 #if !defined(HAL_USE_SERIAL) || defined(__DOXYGEN__)
-#define HAL_USE_SERIAL              TRUE
+#define HAL_USE_SERIAL              FALSE
 #endif
 
 /**
@@ -161,6 +161,38 @@
  */
 #if !defined(HAL_USE_USB) || defined(__DOXYGEN__)
 #define HAL_USE_USB                 FALSE
+#endif
+
+/*===========================================================================*/
+/* Custom drivers                                                            */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables the EEPROM subsystem.
+ */
+#if !defined(HAL_USE_EEPROM) || defined(__DOXYGEN__)
+#define HAL_USE_EEPROM              TRUE
+#endif
+
+/**
+ * @brief   Enables the I2C_SLAVE subsystem.
+ */
+#if !defined(HAL_USE_I2C_SLAVE) || defined(__DOXYGEN__)
+#define HAL_USE_I2C_SLAVE           FALSE
+#endif
+
+/**
+ * @brief   Enables the mutual exclusion APIs for the EEPROM
+ */
+#if !defined(EEPROM_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define EEPROM_USE_MUTUAL_EXCLUSION    TRUE
+#endif
+
+/**
+ * @brief   Enables the mutual exclusion APIs on the I2C bus.
+ */
+#if !defined(I2C_SLAVE_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define I2C_SLAVE_USE_MUTUAL_EXCLUSION    TRUE
 #endif
 
 /*===========================================================================*/
