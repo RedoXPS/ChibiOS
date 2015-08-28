@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2014-2015 Fabio Utzig
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -36,7 +36,11 @@
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
+#ifdef __CC_ARM
+__attribute__ ((section(".ARM.__at_0x400")))
+#else
 __attribute__ ((section(".cfmconfig")))
+#endif
 const uint8_t _cfm[0x10] = {
   0xFF,  /* NV_BACKKEY3: KEY=0xFF */
   0xFF,  /* NV_BACKKEY2: KEY=0xFF */

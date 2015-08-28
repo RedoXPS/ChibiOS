@@ -6,7 +6,6 @@
   +--readme.txt           - This file.
   +--documentation.html   - Shortcut to the web documentation page.
   +--license.txt          - GPL license text.
-  +--exception.txt        - GPL exception text (stable releases only).
   +--demos/               - Demo projects, one directory per platform.
   +--docs/                - Documentation.
   |  +--common/           - Documentation common build resources.
@@ -74,6 +73,7 @@
 *****************************************************************************
 
 *** 3.1.0 ***
+- NIL: Added polled delays required to fix bug #629.
 - HAL: Added support for I2C3 and I2C4 to the STM32 I2Cv2 I2C driver.
 - HAL: Added support for SPI4...SPI6 to the STM32 SPIv2 SPI driver.
 - HAL: Added support for UART4...UART8 to the STM32 UARTv2 UART driver.
@@ -85,7 +85,8 @@
        driver.
 - HAL: Introduced preliminary support for STM32F7xx devices.
 - HAL: Introduced preliminary support for STM32L0xx devices.
-- HAL: New STM32 shared DMAv2 driver supporting channel selection (F2, F4, F7).
+- HAL: New STM32 shared DMAv2 driver supporting channel selection and
+       data cache invalidation (F2, F4, F7).
 - HAL: New STM32 shared DMAv1 driver supporting channel selection and fixing
        the behavior with shared IRQs (F0, L0).
 - HAL: New STM32 ADCv2 driver supporting large STM32 devices (F2, F4, F7).
@@ -93,13 +94,27 @@
 - HAL: Introduced support for TIM21 and TIM22 in STM32 ST driver.
 - HAL: Updated STM32F0xx headers to STM32CubeF0 version 1.3.0. Added support
        for STM32F030xC, STM32F070x6, STM32F070xB devices.
+- VAR: Fixed CRT0_CALL_DESTRUCTORS not utilised in crt0_v7m.s (bug #635)
+       (backported to 3.0.2).
+- HAL: Fixed wrong ld file in STM32F072xB USB CDC demo (bug #634)(backported
+       to 3.0.2).
+- NIL: Fixed Wrong assertion in NIL chSemResetI() and NIL OSAL
+       osalThreadDequeueAllI() (bug #633)(backported to 3.0.2).
+- RT:  Fixed problem with RT mutexes involving priority inheritance (bug #632)
+       (backported to 3.0.2 and 2.6.10).
+- HAL: Fixed HAL to RT dependency in STM32 DAC driver (bug #631)(backported
+       to 3.0.2).
+- HAL: Fixed problem with STM32 I2S driver restart (bug #630)(backported
+       to 3.0.2).
+- HAL: Fixed STM32F3xx ADC driver uses US2RTC directly (bug #629)(backported
+       to 3.0.2).
+- HAL: Fixed CEC clock cannot be disabled on STM32F0xx (bug #628)
+       (backported to 3.0.1).
 - VAR: Fixed lwIP arch code breaks with a 16-bit systick timer (bug #627)
        (backported to 3.0.1).
 - HAL: Fixed broken MAC driver for STM32F107 (bug #626)(backported to 3.0.1).
-- NIL: Fixed missing configuration options from NIL and RT PPC ports
-       (bug #625).
-- RT:  Fixed missing configuration options from NIL and RT PPC ports
-       (bug #625).
+- NIL: Fixed missing configuration options from NIL PPC port (bug #625)
+       (backported to 3.0.1).
 - HAL: Fixed wrong offset in STM32 DAC driver (bug #624)(backported to 3.0.1).
 - HAL: Fixed crash on STM32F030x4/6 devices (bug #623)(backported to 3.0.1).
 - HAL: Fixed duplicated doxygen tag in STM32F4xx hal_lld.h file (bug #621)
