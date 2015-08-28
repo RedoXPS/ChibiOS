@@ -25,7 +25,7 @@
 #include <string.h>
 
 #include "hal.h"
-#include "chprintf.h"
+//#include "chprintf.h"
 
 #if HAL_USE_USB || defined(__DOXYGEN__)
 
