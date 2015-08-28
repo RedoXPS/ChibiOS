@@ -16,7 +16,7 @@
 #include "hal.h"
 
 static THD_WORKING_AREA(waSerEcho, 128);
-static msg_t thSerEcho(void *arg)
+static THD_FUNCTION(thSerEcho, arg)
 {
   (void)arg;
   chRegSetThreadName("SerEcho");
@@ -42,8 +42,6 @@ static msg_t thSerEcho(void *arg)
         while (charbuf != Q_TIMEOUT);
      }
   }
-
-  return 0;
 }
 
 SerialConfig s0cfg = {
