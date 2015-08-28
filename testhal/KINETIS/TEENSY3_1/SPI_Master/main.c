@@ -29,8 +29,6 @@ static THD_FUNCTION(Thread1, arg) {
     }
     chThdSleepMilliseconds(500);
   }
-
-  return 0;
 }
 
 static void spicb(SPIDriver *spip) {
