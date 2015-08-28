@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 /*
    Concepts and parts of this file have been contributed by Uladzimir Pylinsky
@@ -31,7 +28,7 @@
 
 #include "hal.h"
 
-#if HAL_USE_RTC || defined(__DOXYGEN__)
+#if (HAL_USE_RTC == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver local definitions.                                                 */
@@ -83,7 +80,7 @@ void rtcInit(void) {
  */
 void rtcObjectInit(RTCDriver *rtcp) {
 
-#if RTC_HAS_STORAGE
+#if RTC_HAS_STORAGE == TRUE
   rtcp->vmt = &_rtc_lld_vmt;
 #else
   (void)rtcp;
@@ -152,7 +149,7 @@ void rtcSetAlarm(RTCDriver *rtcp,
                  rtcalarm_t alarm,
                  const RTCAlarm *alarmspec) {
 
-  osalDbgCheck((rtcp != NULL) && (alarm < RTC_ALARMS));
+  osalDbgCheck((rtcp != NULL) && (alarm < (rtcalarm_t)RTC_ALARMS));
 
   rtc_lld_set_alarm(rtcp, alarm, alarmspec);
 }
@@ -178,13 +175,15 @@ void rtcGetAlarm(RTCDriver *rtcp,
                  rtcalarm_t alarm,
                  RTCAlarm *alarmspec) {
 
-  osalDbgCheck((rtcp != NULL) && (alarm < RTC_ALARMS) && (alarmspec != NULL));
+  osalDbgCheck((rtcp != NULL) &&
+               (alarm < (rtcalarm_t)RTC_ALARMS) &&
+               (alarmspec != NULL));
 
   rtc_lld_get_alarm(rtcp, alarm, alarmspec);
 }
 #endif /* RTC_ALARMS > 0 */
 
-#if RTC_SUPPORTS_CALLBACKS || defined(__DOXYGEN__)
+#if (RTC_SUPPORTS_CALLBACKS == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   Enables or disables RTC callbacks.
  * @details This function enables or disables the callback, use a @p NULL
@@ -207,31 +206,36 @@ void rtcSetCallback(RTCDriver *rtcp, rtccb_t callback) {
 
   rtc_lld_set_callback(rtcp, callback);
 }
-#endif /* RTC_SUPPORTS_CALLBACKS */
+#endif /* RTC_SUPPORTS_CALLBACKS == TRUE */
 
 /**
  * @brief   Convert @p RTCDateTime to broken-down time structure.
  *
  * @param[in]  timespec   pointer to a @p RTCDateTime structure
  * @param[out] timp       pointer to a broken-down time structure
+ * @param[out] tv_msec    pointer to milliseconds value or @p NULL
  *
  * @api
  */
 void rtcConvertDateTimeToStructTm(const RTCDateTime *timespec,
-                                  struct tm *timp) {
-  uint32_t tmp;
+                                  struct tm *timp,
+                                  uint32_t *tv_msec) {
+  int sec;
 
-  timp->tm_year  = timespec->year + (1980 - 1900);
-  timp->tm_mon   = timespec->month - 1;
-  timp->tm_mday  = timespec->day;
-  timp->tm_isdst = timespec->dstflag;
+  timp->tm_year  = (int)timespec->year + (1980 - 1900);
+  timp->tm_mon   = (int)timespec->month - 1;
+  timp->tm_mday  = (int)timespec->day;
+  timp->tm_isdst = (int)timespec->dstflag;
 
-  tmp = timespec->millisecond / 1000;
-  timp->tm_sec  = tmp % 60;
-  tmp -= timp->tm_sec;
-  timp->tm_min  = (tmp % 3600) / 60;
-  tmp -= timp->tm_min * 60;
-  timp->tm_hour = tmp / 3600;
+  sec = (int)timespec->millisecond / 1000;
+  timp->tm_hour = sec / 3600;
+  sec %= 3600;
+  timp->tm_min = sec / 60;
+  timp->tm_sec = sec % 60;
+
+  if (NULL != tv_msec) {
+    *tv_msec = (uint32_t)timespec->millisecond % 1000U;
+  }
 }
 
 /**
@@ -247,16 +251,23 @@ void rtcConvertStructTmToDateTime(const struct tm *timp,
                                   uint32_t tv_msec,
                                   RTCDateTime *timespec) {
 
-  timespec->year      = timp->tm_year - (1980 - 1900);
-  timespec->month     = timp->tm_mon + 1;
-  timespec->day       = timp->tm_mday;
-  timespec->dayofweek = timp->tm_wday + 1;
-  if (-1 == timp->tm_isdst)
-    timespec->dstflag = 0;  /* set zero if dst is unknown */
-  else
-    timespec->dstflag = timp->tm_isdst;
-  timespec->millisecond = tv_msec +
-      (timp->tm_hour * 3600 + timp->tm_min * 60 + timp->tm_sec) * 1000;
+  /*lint -save -e9034 [10.4] Verified assignments to bit fields.*/
+  timespec->year      = (uint32_t)timp->tm_year - (1980U - 1900U);
+  timespec->month     = (uint32_t)timp->tm_mon + 1U;
+  timespec->day       = (uint32_t)timp->tm_mday;
+  timespec->dayofweek = (uint32_t)timp->tm_wday + 1U;
+  if (-1 == timp->tm_isdst) {
+    timespec->dstflag = 0U;  /* set zero if dst is unknown */
+  }
+  else {
+    timespec->dstflag = (uint32_t)timp->tm_isdst;
+  }
+  /*lint -restore*/
+  /*lint -save -e9033 [10.8] Verified assignments to bit fields.*/
+  timespec->millisecond = tv_msec + (uint32_t)(((timp->tm_hour * 3600) +
+                                                (timp->tm_min * 60) +
+                                                 timp->tm_sec) * 1000);
+  /*lint -restore*/
 }
 
 /**
@@ -271,38 +282,39 @@ void rtcConvertStructTmToDateTime(const struct tm *timp,
  */
 uint32_t rtcConvertDateTimeToFAT(const RTCDateTime *timespec) {
   uint32_t fattime;
-  uint32_t sec, min, hour, day, month, tmp;
+  uint32_t sec, min, hour, day, month;
 
-  tmp = timespec->millisecond / 1000;
-  sec = tmp % 60;
-  min = (tmp - sec) % 3600;
-  hour = (tmp - sec - min * 60) / 3600;
-  day = timespec->day;
+  sec   = timespec->millisecond / 1000U;
+  hour  = sec / 3600U;
+  sec  %= 3600U;
+  min   = sec / 60U;
+  sec  %= 60U;
+  day   = timespec->day;
   month = timespec->month;
 
   /* handle DST flag */
-  if (1 == timespec->dstflag) {
-    hour += 1;
-    if (hour == 24) {
-      hour = 0;
-      day += 1;
-      if (day > month_len[month - 1]) {
-        day = 1;
-        month += 1;
+  if (1U == timespec->dstflag) {
+    hour += 1U;
+    if (hour == 24U) {
+      hour = 0U;
+      day += 1U;
+      if (day > month_len[month - 1U]) {
+        day = 1U;
+        month += 1U;
       }
     }
   }
 
-  fattime  = sec            >> 1;
-  fattime |= min            << 5;
-  fattime |= hour           << 11;
-  fattime |= day            << 16;
-  fattime |= month          << 21;
-  fattime |= timespec->year << 25;
+  fattime  = sec   >> 1U;
+  fattime |= min   << 5U;
+  fattime |= hour  << 11U;
+  fattime |= day   << 16U;
+  fattime |= month << 21U;
+  fattime |= (uint32_t)timespec->year << 25U;
 
   return fattime;
 }
 
-#endif /* HAL_USE_RTC */
+#endif /* HAL_USE_RTC == TRUE */
 
 /** @} */

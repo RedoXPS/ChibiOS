@@ -27,10 +27,8 @@
 #define BOARD_PJRC_TEENSY_3_1
 #define BOARD_NAME                  "PJRC Teensy 3.1"
 
-/* External 16 MHz crystal with PLL for 72 MHz core/system clock. */
-#define KINETIS_SYSCLK_FREQUENCY    72000000
-#define KINETIS_MCG_MODE            KINETIS_MCG_MODE_PEE
-#define KINETIS_XTAL_FREQUENCY      16000000
+/* External 16 MHz crystal */
+#define KINETIS_XTAL_FREQUENCY      16000000UL
 
 /*
  * IO pins assignments.

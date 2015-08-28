@@ -28,7 +28,7 @@ static THD_FUNCTION(Thread1, arg) {
 
   (void)arg;
   chRegSetThreadName("blinker1");
-  while (TRUE) {
+  while (true) {
     palClearPort(IOPORT1, PAL_PORT_BIT(PA_LED2));
     chThdSleepMilliseconds(200);
     palSetPort(IOPORT1, PAL_PORT_BIT(PA_LED1) | PAL_PORT_BIT(PA_LED2));
@@ -38,7 +38,6 @@ static THD_FUNCTION(Thread1, arg) {
     palSetPort(IOPORT1, PAL_PORT_BIT(PA_LED1) | PAL_PORT_BIT(PA_LED2));
     chThdSleepMilliseconds(800);
   }
-  return 0;
 }
 
 /*
@@ -49,13 +48,12 @@ static THD_FUNCTION(Thread2, arg) {
 
   (void)arg;
   chRegSetThreadName("blinker2");
-  while (TRUE) {
+  while (true) {
     palClearPad(IOPORT1, PA_LEDUSB);
     chThdSleepMilliseconds(200);
     palSetPad(IOPORT1, PA_LEDUSB);
     chThdSleepMilliseconds(300);
   }
-  return 0;
 }
 
 /*
@@ -88,7 +86,7 @@ int main(void) {
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the buttons state and run test procedure.
    */
-  while (TRUE) {
+  while (true) {
     if (!palReadPad(IOPORT1, PA_BUTTON1))
       sdWrite(&SD1, (uint8_t *)"Hello World!\r\n", 14);
     if (!palReadPad(IOPORT1, PA_BUTTON2))

@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -30,7 +27,8 @@
 
 /* The ChibiOS/RT kernel provides the following definitions by itself, this
    check is performed in order to avoid conflicts. */
-#if !defined(_CHIBIOS_RT_) || !CH_CFG_USE_QUEUES || defined(__DOXYGEN__)
+#if !defined(_CHIBIOS_RT_) || (CH_CFG_USE_QUEUES == FALSE) ||               \
+    defined(__DOXYGEN__)
 
 /**
  * @name    Queue functions returned status value
@@ -39,8 +37,8 @@
 #define Q_OK            MSG_OK      /**< @brief Operation successful.       */
 #define Q_TIMEOUT       MSG_TIMEOUT /**< @brief Timeout condition.          */
 #define Q_RESET         MSG_RESET   /**< @brief Queue has been reset.       */
-#define Q_EMPTY         -3          /**< @brief Queue empty.                */
-#define Q_FULL          -4          /**< @brief Queue full,                 */
+#define Q_EMPTY         (msg_t)-3   /**< @brief Queue empty.                */
+#define Q_FULL          (msg_t)-4   /**< @brief Queue full,                 */
 /** @} */
 
 /**
@@ -85,9 +83,12 @@ struct io_queue {
  * @param[in] qp        pointer to a @p io_queue_t structure.
  * @return              The buffer size.
  *
- * @iclass
+ * @xclass
  */
-#define qSizeI(qp) ((size_t)((qp)->q_top - (qp)->q_buffer))
+#define qSizeX(qp)                                                          \
+  /*lint -save -e9033 [10.8] The cast is safe.*/                            \
+  ((size_t)((qp)->q_top - (qp)->q_buffer))                                  \
+  /*lint -restore*/
 
 /**
  * @brief   Queue space.
@@ -149,7 +150,7 @@ typedef io_queue_t input_queue_t;
  *
  * @iclass
  */
-#define iqGetEmptyI(iqp) (qSizeI(iqp) - qSpaceI(iqp))
+#define iqGetEmptyI(iqp) (qSizeX(iqp) - qSpaceI(iqp))
 
 /**
  * @brief   Evaluates to @p TRUE if the specified input queue is empty.
@@ -161,7 +162,7 @@ typedef io_queue_t input_queue_t;
  *
  * @iclass
  */
-#define iqIsEmptyI(iqp) ((bool)(qSpaceI(iqp) <= 0))
+#define iqIsEmptyI(iqp) ((bool)(qSpaceI(iqp) == 0U))
 
 /**
  * @brief   Evaluates to @p TRUE if the specified input queue is full.
@@ -174,7 +175,7 @@ typedef io_queue_t input_queue_t;
  * @iclass
  */
 #define iqIsFullI(iqp) ((bool)(((iqp)->q_wrptr == (iqp)->q_rdptr) &&        \
-                               ((iqp)->q_counter != 0)))
+                               ((iqp)->q_counter != 0U)))
 
 /**
  * @brief   Input queue read.
@@ -204,7 +205,7 @@ typedef io_queue_t input_queue_t;
  */
 #define _INPUTQUEUE_DATA(name, buffer, size, inotify, link) {               \
   NULL,                                                                     \
-  0,                                                                        \
+  0U,                                                                       \
   (uint8_t *)(buffer),                                                      \
   (uint8_t *)(buffer) + (size),                                             \
   (uint8_t *)(buffer),                                                      \
@@ -252,7 +253,7 @@ typedef io_queue_t output_queue_t;
  *
  * @iclass
  */
-#define oqGetFullI(oqp) (qSizeI(oqp) - qSpaceI(oqp))
+#define oqGetFullI(oqp) (qSizeX(oqp) - qSpaceI(oqp))
 
 /**
  * @brief   Returns the empty space into an output queue.
@@ -276,7 +277,7 @@ typedef io_queue_t output_queue_t;
  * @iclass
  */
 #define oqIsEmptyI(oqp) ((bool)(((oqp)->q_wrptr == (oqp)->q_rdptr) &&       \
-                                ((oqp)->q_counter != 0)))
+                                ((oqp)->q_counter != 0U)))
 
 /**
  * @brief   Evaluates to @p TRUE if the specified output queue is full.
@@ -288,7 +289,7 @@ typedef io_queue_t output_queue_t;
  *
  * @iclass
  */
-#define oqIsFullI(oqp) ((bool)(qSpaceI(oqp) <= 0))
+#define oqIsFullI(oqp) ((bool)(qSpaceI(oqp) == 0U))
 
 /**
  * @brief   Output queue write.
@@ -350,17 +351,17 @@ extern "C" {
                     qnotify_t infy, void *link);
   void iqResetI(input_queue_t *iqp);
   msg_t iqPutI(input_queue_t *iqp, uint8_t b);
-  msg_t iqGetTimeout(input_queue_t *iqp, systime_t time);
+  msg_t iqGetTimeout(input_queue_t *iqp, systime_t timeout);
   size_t iqReadTimeout(input_queue_t *iqp, uint8_t *bp,
-                       size_t n, systime_t time);
+                       size_t n, systime_t timeout);
 
   void oqObjectInit(output_queue_t *oqp, uint8_t *bp, size_t size,
                     qnotify_t onfy, void *link);
   void oqResetI(output_queue_t *oqp);
-  msg_t oqPutTimeout(output_queue_t *oqp, uint8_t b, systime_t time);
+  msg_t oqPutTimeout(output_queue_t *oqp, uint8_t b, systime_t timeout);
   msg_t oqGetI(output_queue_t *oqp);
   size_t oqWriteTimeout(output_queue_t *oqp, const uint8_t *bp,
-                        size_t n, systime_t time);
+                        size_t n, systime_t timeout);
 #ifdef __cplusplus
 }
 #endif
@@ -369,7 +370,7 @@ extern "C" {
 
 /* If ChibiOS is being used and its own queues subsystem is activated then
    this module will use the ChibiOS queues code.*/
-#define qSizeI(qp)                          chQSizeI(qp)
+#define qSizeX(qp)                          chQSizeX(qp)
 #define qSpaceI(qp)                         chQSpaceI(qp)
 #define qGetLink(qp)                        chQGetLinkX(qp)
 #define iqGetFullI(iqp)                     chIQGetFullI(iqp)
@@ -395,7 +396,7 @@ extern "C" {
 #define oqGetI(oqp)                         chOQGetI(oqp)
 #define oqWriteTimeout(oqp, bp, n, time)    chOQWriteTimeout(oqp, bp, n, time)
 
-#endif /* defined(_CHIBIOS_RT_) && CH_CFG_USE_QUEUES */
+#endif /* defined(_CHIBIOS_RT_) || (CH_CFG_USE_QUEUES == FALSE) */
 
 #endif /* _HAL_QUEUES_H_ */
 

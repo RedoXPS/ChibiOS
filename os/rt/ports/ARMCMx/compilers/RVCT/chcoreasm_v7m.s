@@ -84,10 +84,13 @@ _port_thread_start PROC
 #if CH_DBG_SYSTEM_STATE_CHECK
                 bl      _dbg_check_unlock
 #endif
+#if CH_DBG_STATISTICS
+                bl      _stats_stop_measure_crit_thd
+#endif
 #if CORTEX_SIMPLIFIED_PRIORITY
                 cpsie   i
 #else
-                movs    r3, #CORTEX_BASEPRI_DISABLED
+                movs    r3, #0              /* CORTEX_BASEPRI_DISABLED */
                 msr     BASEPRI, r3
 #endif
                 mov     r0, r5

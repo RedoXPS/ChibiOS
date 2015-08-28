@@ -34,7 +34,7 @@
 /**
  * @brief   Cortex core model.
  */
-#define CORTEX_MODEL            CORTEX_M0PLUS
+#define CORTEX_MODEL            0
 
 /**
  * @brief   Floating Point unit presence.
@@ -44,7 +44,7 @@
 /**
  * @brief   Number of bits in priority masks.
  */
-#define CORTEX_PRIORITY_BITS    4
+#define CORTEX_PRIORITY_BITS    2
 
 /**
  * @brief   Number of interrupt vectors.
@@ -70,6 +70,10 @@
    from this header because we need this file to be usable also from
    assembler source files. We verify that the info matches instead.*/
 #include "stm32l0xx.h"
+
+#if CORTEX_MODEL != __CORTEX_M
+#error "CMSIS __CORTEX_M mismatch"
+#endif
 
 #if CORTEX_PRIORITY_BITS != __NVIC_PRIO_BITS
 #error "CMSIS __NVIC_PRIO_BITS mismatch"

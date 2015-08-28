@@ -28,7 +28,7 @@
 #ifndef _CHMSG_H_
 #define _CHMSG_H_
 
-#if CH_CFG_USE_MESSAGES || defined(__DOXYGEN__)
+#if (CH_CFG_USE_MESSAGES == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -115,7 +115,7 @@ static inline void chMsgReleaseS(thread_t *tp, msg_t msg) {
   chSchWakeupS(tp, msg);
 }
 
-#endif /* CH_CFG_USE_MESSAGES */
+#endif /* CH_CFG_USE_MESSAGES == TRUE */
 
 #endif /* _CHMSG_H_ */
 

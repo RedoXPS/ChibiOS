@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2014-2015 Fabio Utzig
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -80,9 +80,9 @@ static void serve_interrupt(SerialDriver *sdp) {
 
   if (s1 & UARTx_S1_RDRF) {
     osalSysLockFromISR();
-    if (chIQIsEmptyI(&sdp->iqueue))
+    if (iqIsEmptyI(&sdp->iqueue))
       chnAddFlagsI(sdp, CHN_INPUT_AVAILABLE);
-    if (chIQPutI(&sdp->iqueue, u->D) < Q_OK)
+    if (iqPutI(&sdp->iqueue, u->D) < Q_OK)
       chnAddFlagsI(sdp, SD_OVERRUN_ERROR);
     osalSysUnlockFromISR();
   }
@@ -91,7 +91,7 @@ static void serve_interrupt(SerialDriver *sdp) {
     msg_t b;
 
     osalSysLockFromISR();
-    b = chOQGetI(&sdp->oqueue);
+    b = oqGetI(&sdp->oqueue);
     osalSysUnlockFromISR();
 
     if (b < Q_OK) {
@@ -112,7 +112,7 @@ static void preload(SerialDriver *sdp) {
   UART_TypeDef *u = sdp->uart;
 
   if (u->S1 & UARTx_S1_TDRE) {
-    msg_t b = chOQGetI(&sdp->oqueue);
+    msg_t b = oqGetI(&sdp->oqueue);
     if (b < Q_OK) {
       chnAddFlagsI(sdp, CHN_OUTPUT_EMPTY);
       return;
@@ -153,9 +153,20 @@ static void notify3(io_queue_t *qp)
  * @brief   Common UART configuration.
  *
  */
-static void configure_uart(UART_TypeDef *uart, const SerialConfig *config)
+static void configure_uart(SerialDriver *sdp, const SerialConfig *config)
 {
-  uint32_t divisor = (KINETIS_SYSCLK_FREQUENCY * 2 + 1) / config->sc_speed;
+  UART_TypeDef *uart = sdp->uart;
+  uint32_t divisor=KINETIS_BUSCLK_FREQUENCY;
+#if KINETIS_SERIAL_USE_UART0
+  if(sdp == &SD1)
+	 divisor = KINETIS_SYSCLK_FREQUENCY;
+#endif
+#if KINETIS_SERIAL_USE_UART1
+  if(sdp == &SD2)
+	 divisor = KINETIS_SYSCLK_FREQUENCY;
+#endif
+
+  divisor = (divisor * 2 + 1) / config->sc_speed;
 
   /* Disable UART while configuring */
   uart->C2 &= ~(UARTx_C2_RE | UARTx_C2_TE);
@@ -178,8 +189,8 @@ static void configure_uart(UART_TypeDef *uart, const SerialConfig *config)
  */
 
 #if KINETIS_SERIAL_USE_UART0 || defined(__DOXYGEN__)
-OSAL_IRQ_HANDLER(KINETIS_SERIAL0_IRQ_VECTOR) {
 
+OSAL_IRQ_HANDLER(KINETIS_SERIAL0_IRQ_VECTOR) {
   OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD1);
   OSAL_IRQ_EPILOGUE();
@@ -187,8 +198,8 @@ OSAL_IRQ_HANDLER(KINETIS_SERIAL0_IRQ_VECTOR) {
 #endif
 
 #if KINETIS_SERIAL_USE_UART1 || defined(__DOXYGEN__)
-OSAL_IRQ_HANDLER(KINETIS_SERIAL1_IRQ_VECTOR) {
 
+OSAL_IRQ_HANDLER(KINETIS_SERIAL1_IRQ_VECTOR) {
   OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD2);
   OSAL_IRQ_EPILOGUE();
@@ -196,8 +207,8 @@ OSAL_IRQ_HANDLER(KINETIS_SERIAL1_IRQ_VECTOR) {
 #endif
 
 #if KINETIS_SERIAL_USE_UART2 || defined(__DOXYGEN__)
-OSAL_IRQ_HANDLER(KINETIS_SERIAL2_IRQ_VECTOR) {
 
+OSAL_IRQ_HANDLER(KINETIS_SERIAL2_IRQ_VECTOR) {
   OSAL_IRQ_PROLOGUE();
   serve_interrupt(&SD3);
   OSAL_IRQ_EPILOGUE();
@@ -255,7 +266,7 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
 #if KINETIS_SERIAL_USE_UART0
     if (sdp == &SD1) {
       SIM->SCGC4 |= SIM_SCGC4_UART0;
-      configure_uart(sdp->uart, config);
+      configure_uart(sdp,config);
       nvicEnableVector(UART0Status_IRQn, KINETIS_SERIAL_UART0_PRIORITY);
     }
 #endif /* KINETIS_SERIAL_USE_UART0 */
@@ -263,7 +274,7 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
 #if KINETIS_SERIAL_USE_UART1
     if (sdp == &SD2) {
       SIM->SCGC4 |= SIM_SCGC4_UART1;
-      configure_uart(sdp->uart, config);
+      configure_uart(sdp,config);
       nvicEnableVector(UART1Status_IRQn, KINETIS_SERIAL_UART1_PRIORITY);
     }
 #endif /* KINETIS_SERIAL_USE_UART1 */
@@ -271,7 +282,7 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
 #if KINETIS_SERIAL_USE_UART2
     if (sdp == &SD3) {
       SIM->SCGC4 |= SIM_SCGC4_UART2;
-      configure_uart(sdp->uart, config);
+      configure_uart(sdp,config);
       nvicEnableVector(UART2Status_IRQn, KINETIS_SERIAL_UART2_PRIORITY);
     }
 #endif /* KINETIS_SERIAL_USE_UART2 */

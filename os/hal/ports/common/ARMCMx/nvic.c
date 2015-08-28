@@ -82,7 +82,21 @@ void nvicSetSystemHandlerPriority(uint32_t handler, uint32_t prio) {
 
   osalDbgCheck(handler <= 12);
 
+#if defined(__CORE_CM7_H_GENERIC)
+  SCB->SHPR[handler] = NVIC_PRIORITY_MASK(prio);
+#else
   SCB->SHP[handler] = NVIC_PRIORITY_MASK(prio);
+#endif
+}
+
+/**
+ * @brief   Clears a pending interrupt source.
+ *
+ * @param[in] n         the interrupt number
+ */
+void nvicClearPending(uint32_t n) {
+
+  NVIC->ICPR[n >> 5] = 1 << (n & 0x1F);
 }
 
 /** @} */

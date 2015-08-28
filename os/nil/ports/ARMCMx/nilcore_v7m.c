@@ -51,19 +51,21 @@
 /* Module interrupt handlers.                                                */
 /*===========================================================================*/
 
-#if !CORTEX_SIMPLIFIED_PRIORITY || defined(__DOXYGEN__)
+#if (CORTEX_SIMPLIFIED_PRIORITY == FALSE) || defined(__DOXYGEN__)
 /**
  * @brief   SVC vector.
  * @details The SVC vector is used for exception mode re-entering after a
  *          context switch.
  * @note    The PendSV vector is only used in advanced kernel mode.
  */
+/*lint -save -e9075 [8.4] All symbols are invoked from asm context.*/
 void SVC_Handler(void) {
+/*lint -restore*/
   struct port_extctx *ctxp;
 
-#if CORTEX_USE_FPU
+#if CORTEX_USE_FPU == TRUE
   /* Enforcing unstacking of the FP part of the context.*/
-  SCB_FPCCR &= ~FPCCR_LSPACT;
+  FPU->FPCCR &= ~FPU_FPCCR_LSPACT_Msk;
 #endif
 
   /* The port_extctx structure is pointed by the PSP register.*/
@@ -79,21 +81,23 @@ void SVC_Handler(void) {
   /* Restoring the normal interrupts status.*/
   port_unlock_from_isr();
 }
-#endif /* !CORTEX_SIMPLIFIED_PRIORITY */
+#endif /* CORTEX_SIMPLIFIED_PRIORITY == FALSE */
 
-#if CORTEX_SIMPLIFIED_PRIORITY || defined(__DOXYGEN__)
+#if (CORTEX_SIMPLIFIED_PRIORITY == TRUE) || defined(__DOXYGEN__)
 /**
  * @brief   PendSV vector.
  * @details The PendSV vector is used for exception mode re-entering after a
  *          context switch.
  * @note    The PendSV vector is only used in compact kernel mode.
  */
+/*lint -save -e9075 [8.4] All symbols are invoked from asm context.*/
 void PendSV_Handler(void) {
+/*lint -restore*/
   struct port_extctx *ctxp;
 
-#if CORTEX_USE_FPU
+#if CORTEX_USE_FPU == TRUE
   /* Enforcing unstacking of the FP part of the context.*/
-  SCB_FPCCR &= ~FPCCR_LSPACT;
+  FPU->FPCCR &= ~FPU_FPCCR_LSPACT_Msk;
 #endif
 
   /* The port_extctx structure is pointed by the PSP register.*/
@@ -106,7 +110,7 @@ void PendSV_Handler(void) {
   /* Writing back the modified PSP value.*/
   __set_PSP((uint32_t)ctxp);
 }
-#endif /* CORTEX_SIMPLIFIED_PRIORITY */
+#endif /* CORTEX_SIMPLIFIED_PRIORITY == TRUE */
 
 /*===========================================================================*/
 /* Module exported functions.                                                */
@@ -118,10 +122,10 @@ void PendSV_Handler(void) {
 void _port_irq_epilogue(void) {
 
   port_lock_from_isr();
-  if ((SCB->ICSR & SCB_ICSR_RETTOBASE_Msk) != 0) {
+  if ((SCB->ICSR & SCB_ICSR_RETTOBASE_Msk) != 0U) {
     struct port_extctx *ctxp;
 
-#if CORTEX_USE_FPU
+#if CORTEX_USE_FPU == TRUE
       /* Enforcing a lazy FPU state save by accessing the FPCSR register.*/
       (void) __get_FPSCR();
 #endif

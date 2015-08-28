@@ -64,6 +64,16 @@ SerialDriver SD5;
 SerialDriver SD6;
 #endif
 
+/** @brief UART7 serial driver identifier.*/
+#if STM32_SERIAL_USE_UART7 || defined(__DOXYGEN__)
+SerialDriver SD7;
+#endif
+
+/** @brief UART8 serial driver identifier.*/
+#if STM32_SERIAL_USE_UART8 || defined(__DOXYGEN__)
+SerialDriver SD8;
+#endif
+
 /*===========================================================================*/
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
@@ -165,11 +175,16 @@ static void serve_interrupt(SerialDriver *sdp) {
 
   /* Data available.*/
   osalSysLockFromISR();
-  while (sr & USART_SR_RXNE) {
+  while (sr & (USART_SR_RXNE | USART_SR_ORE | USART_SR_NE | USART_SR_FE |
+               USART_SR_PE)) {
+    uint8_t b;
+
     /* Error condition detection.*/
     if (sr & (USART_SR_ORE | USART_SR_NE | USART_SR_FE  | USART_SR_PE))
       set_error(sdp, sr);
-    sdIncomingDataI(sdp, u->DR);
+    b = u->DR;
+    if (sr & USART_SR_RXNE)
+      sdIncomingDataI(sdp, b);
     sr = u->SR;
   }
   osalSysUnlockFromISR();
@@ -244,6 +259,22 @@ static void notify6(io_queue_t *qp) {
 
   (void)qp;
   USART6->CR1 |= USART_CR1_TXEIE;
+}
+#endif
+
+#if STM32_SERIAL_USE_UART7 || defined(__DOXYGEN__)
+static void notify7(io_queue_t *qp) {
+
+  (void)qp;
+  UART7->CR1 |= USART_CR1_TXEIE;
+}
+#endif
+
+#if STM32_SERIAL_USE_UART8 || defined(__DOXYGEN__)
+static void notify8(io_queue_t *qp) {
+
+  (void)qp;
+  UART8->CR1 |= USART_CR1_TXEIE;
 }
 #endif
 
@@ -351,7 +382,7 @@ OSAL_IRQ_HANDLER(STM32_UART5_HANDLER) {
 #error "STM32_USART6_HANDLER not defined"
 #endif
 /**
- * @brief   USART1 interrupt handler.
+ * @brief   USART6 interrupt handler.
  *
  * @isr
  */
@@ -360,6 +391,44 @@ OSAL_IRQ_HANDLER(STM32_USART6_HANDLER) {
   OSAL_IRQ_PROLOGUE();
 
   serve_interrupt(&SD6);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif
+
+#if STM32_SERIAL_USE_UART7 || defined(__DOXYGEN__)
+#if !defined(STM32_UART7_HANDLER)
+#error "STM32_UART7_HANDLER not defined"
+#endif
+/**
+ * @brief   UART7 interrupt handler.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_UART7_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  serve_interrupt(&SD7);
+
+  OSAL_IRQ_EPILOGUE();
+}
+#endif
+
+#if STM32_SERIAL_USE_UART8 || defined(__DOXYGEN__)
+#if !defined(STM32_UART8_HANDLER)
+#error "STM32_UART8_HANDLER not defined"
+#endif
+/**
+ * @brief   UART8 interrupt handler.
+ *
+ * @isr
+ */
+OSAL_IRQ_HANDLER(STM32_UART8_HANDLER) {
+
+  OSAL_IRQ_PROLOGUE();
+
+  serve_interrupt(&SD8);
 
   OSAL_IRQ_EPILOGUE();
 }
@@ -404,6 +473,16 @@ void sd_lld_init(void) {
 #if STM32_SERIAL_USE_USART6
   sdObjectInit(&SD6, NULL, notify6);
   SD6.usart = USART6;
+#endif
+
+#if STM32_SERIAL_USE_UART7
+  sdObjectInit(&SD7, NULL, notify7);
+  SD7.usart = UART7;
+#endif
+
+#if STM32_SERIAL_USE_UART8
+  sdObjectInit(&SD8, NULL, notify8);
+  SD8.usart = UART8;
 #endif
 }
 
@@ -457,6 +536,18 @@ void sd_lld_start(SerialDriver *sdp, const SerialConfig *config) {
     if (&SD6 == sdp) {
       rccEnableUSART6(FALSE);
       nvicEnableVector(STM32_USART6_NUMBER, STM32_SERIAL_USART6_PRIORITY);
+    }
+#endif
+#if STM32_SERIAL_USE_UART7
+    if (&SD7 == sdp) {
+      rccEnableUART7(FALSE);
+      nvicEnableVector(STM32_UART7_NUMBER, STM32_SERIAL_UART7_PRIORITY);
+    }
+#endif
+#if STM32_SERIAL_USE_UART8
+    if (&SD8 == sdp) {
+      rccEnableUART8(FALSE);
+      nvicEnableVector(STM32_UART8_NUMBER, STM32_SERIAL_UART8_PRIORITY);
     }
 #endif
   }
@@ -515,6 +606,20 @@ void sd_lld_stop(SerialDriver *sdp) {
     if (&SD6 == sdp) {
       rccDisableUSART6(FALSE);
       nvicDisableVector(STM32_USART6_NUMBER);
+      return;
+    }
+#endif
+#if STM32_SERIAL_USE_UART7
+    if (&SD7 == sdp) {
+      rccDisableUART7(FALSE);
+      nvicDisableVector(STM32_UART7_NUMBER);
+      return;
+    }
+#endif
+#if STM32_SERIAL_USE_UART8
+    if (&SD8 == sdp) {
+      rccDisableUART8(FALSE);
+      nvicDisableVector(STM32_UART8_NUMBER);
       return;
     }
 #endif

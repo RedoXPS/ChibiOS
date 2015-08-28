@@ -154,20 +154,27 @@ VPATH     = $(SRCPATHS)
 # Makefile rules
 #
 
-all: $(OBJS) $(OUTFILES) MAKE_ALL_RULE_HOOK
+all: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(OUTFILES) POST_MAKE_ALL_RULE_HOOK
 
-MAKE_ALL_RULE_HOOK:
+PRE_MAKE_ALL_RULE_HOOK:
 
-$(OBJS): | $(BUILDDIR)
+POST_MAKE_ALL_RULE_HOOK:
 
-$(BUILDDIR) $(OBJDIR) $(LSTDIR):
+$(OBJS): | $(BUILDDIR) $(OBJDIR) $(LSTDIR)
+
+$(BUILDDIR):
 ifneq ($(USE_VERBOSE_COMPILE),yes)
 	@echo Compiler Options
 	@echo $(CC) -c $(CFLAGS) -I. $(IINCDIR) main.c -o main.o
 	@echo
 endif
-	mkdir -p $(OBJDIR)
-	mkdir -p $(LSTDIR)
+	@mkdir -p $(BUILDDIR)
+
+$(OBJDIR):
+	@mkdir -p $(OBJDIR)
+
+$(LSTDIR):
+	@mkdir -p $(LSTDIR)
 
 $(ACPPOBJS) : $(OBJDIR)/%.o : %.cpp Makefile
 ifeq ($(USE_VERBOSE_COMPILE),yes)

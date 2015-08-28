@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2014-2015 Fabio Utzig
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -36,7 +36,11 @@
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
+#ifdef __CC_ARM
+__attribute__ ((section(".ARM.__at_0x400")))
+#else
 __attribute__ ((section(".cfmconfig")))
+#endif
 const uint8_t _cfm[0x10] = {
   0xFF,  /* NV_BACKKEY3: KEY=0xFF */
   0xFF,  /* NV_BACKKEY2: KEY=0xFF */
@@ -95,8 +99,8 @@ void k20x_clock_init(void) {
 #if KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE
   uint32_t ratio, frdiv;
   uint32_t ratios[] = { 32, 64, 128, 256, 512, 1024, 1280, 1536 };
-  int ratio_quantity = sizeof(ratios) / sizeof(ratios[0]);
-  int i;
+  uint8_t ratio_quantity = sizeof(ratios) / sizeof(ratios[0]);
+  uint8_t i;
 #endif /* KINETIS_MCG_MODE == KINETIS_MCG_MODE_PEE */
 
   /* Disable the watchdog */
@@ -137,13 +141,13 @@ void k20x_clock_init(void) {
    */
   /* Enable OSC, low power mode */
   MCG->C2 = MCG_C2_LOCRE0 | MCG_C2_EREFS0;
-  if (KINETIS_XTAL_FREQUENCY > 8000000)
+  if (KINETIS_XTAL_FREQUENCY > 8000000UL)
     MCG->C2 |= MCG_C2_RANGE0(2);
   else
     MCG->C2 |= MCG_C2_RANGE0(1);
 
   frdiv = 7;
-  ratio = KINETIS_XTAL_FREQUENCY / 31250;
+  ratio = KINETIS_XTAL_FREQUENCY / 31250UL;
   for (i = 0; i < ratio_quantity; ++i) {
     if (ratio == ratios[i]) {
       frdiv = i;
@@ -166,33 +170,44 @@ void k20x_clock_init(void) {
   /*
    * Now in FBE mode
    */
-  #if KINETIS_SYSCLK_FREQUENCY == 48000000
-  /* Config PLL input for 2 MHz */
-  MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY / 2000000UL) - 1);
-  /* Config PLL for 96 MHz output */
-  MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
-  //config divisors: 48 MHz core, 48 MHz bus, 24 MHz flash, USB = 96 / 2
-	SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(1) | SIM_CLKDIV1_OUTDIV2(1) |	 SIM_CLKDIV1_OUTDIV4(3);
-	SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(1);
-  #elif KINETIS_SYSCLK_FREQUENCY == 72000000
-  /* Config PLL input for 2.667 MHz */
-  MCG->C5 = MCG_C5_PRDIV0(5);//(KINETIS_XTAL_FREQUENCY / 2667000UL) - 1);
-  /* Config PLL for 72 MHz output */
-  MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(3);
-  	// config divisors: 72 MHz core, 36 MHz bus, 24 MHz flash, USB = 72 * 2 / 3
-	SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(0) | SIM_CLKDIV1_OUTDIV2(1) |	 SIM_CLKDIV1_OUTDIV4(2);
-	SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(2) | SIM_CLKDIV2_USBFRAC;
-  #endif
+  #define KINETIS_PLLIN_FREQUENCY 2000000UL
+  /*
+   * Config PLL input for 2 MHz
+   * TODO: Make sure KINETIS_XTAL_FREQUENCY >= 2Mhz && <= 50Mhz
+   */
 
-  /* Wait for PLL to start using crystal as its input */
-  while (!(MCG->S & MCG_S_PLLST));
+  MCG->C5 = MCG_C5_PRDIV0((KINETIS_XTAL_FREQUENCY/KINETIS_PLLIN_FREQUENCY) - 1);
 
-  /* Wait for PLL to lock */
-  while (!(MCG->S & MCG_S_LOCK0));
+  /*
+   * Config PLL output to match KINETIS_SYSCLK_FREQUENCY
+   * TODO: make sure KINETIS_SYSCLK_FREQUENCY is a match
+   */
+  for(i = 24; i < 56; i++)
+  {
+    if(i == (KINETIS_PLLCLK_FREQUENCY/KINETIS_PLLIN_FREQUENCY))
+    {
+      /* Config PLL to match KINETIS_PLLCLK_FREQUENCY */
+      MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(i-24);
+      break;
+    }
+  }
+  /*
+   * Config PLL for 96 MHz output as default setting
+   */
+  if(i>=56)
+    MCG->C6 = MCG_C6_PLLS | MCG_C6_VDIV0(0);
+
+  /* Wait for PLL to start using crystal as its input, and to lock */
+  while ((MCG->S & (MCG_S_PLLST|MCG_S_LOCK0))!=(MCG_S_PLLST|MCG_S_LOCK0));
 
   /*
    * Now in PBE mode
    */
+  /* Set the PLL dividers for the different clocks */
+  SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(KINETIS_CLKDIV1_OUTDIV1-1) |
+                 SIM_CLKDIV1_OUTDIV2(KINETIS_CLKDIV1_OUTDIV2-1) |
+                 SIM_CLKDIV1_OUTDIV4(KINETIS_CLKDIV1_OUTDIV4-1);
+  SIM->CLKDIV2 = SIM_CLKDIV2_USBDIV(0);
 
   /* Switch to PLL as clock source */
   MCG->C1 = MCG_C1_CLKS(0);

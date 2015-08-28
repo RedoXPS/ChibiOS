@@ -25,7 +25,7 @@
  * @{
  */
 
-#define __FROM_ASM__
+#define _FROM_ASM_
 #include "chconf.h"
 #include "armparams.h"
 
@@ -268,6 +268,7 @@ _bxr4:          bx      r4
                 mov     r0, r5
                 mov     lr, pc
                 bx      r4
+                mov     r0, #0              /* MSG_OK */
                 bl      chThdExit
 _zombies:       b       _zombies
 #endif /* !defined(THUMB_NO_INTERWORKING) */

@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -203,17 +200,17 @@ typedef struct {
  * @{
  */
 /** @brief No pending conditions.*/
-#define CHN_NO_ERROR            0
+#define CHN_NO_ERROR            (eventflags_t)0
 /** @brief Connection happened.*/
-#define CHN_CONNECTED           1
+#define CHN_CONNECTED           (eventflags_t)1
 /** @brief Disconnection happened.*/
-#define CHN_DISCONNECTED        2
+#define CHN_DISCONNECTED        (eventflags_t)2
 /** @brief Data available in the input queue.*/
-#define CHN_INPUT_AVAILABLE     4
+#define CHN_INPUT_AVAILABLE     (eventflags_t)4
 /** @brief Output queue empty.*/
-#define CHN_OUTPUT_EMPTY        8
+#define CHN_OUTPUT_EMPTY        (eventflags_t)8
 /** @brief Transmission end.*/
-#define CHN_TRANSMISSION_END    16
+#define CHN_TRANSMISSION_END    (eventflags_t)16
 /** @} */
 
 /**

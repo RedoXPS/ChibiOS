@@ -1,20 +1,17 @@
 /*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio.
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
-    This file is part of ChibiOS.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -28,7 +25,7 @@
 #ifndef _SERIAL_H_
 #define _SERIAL_H_
 
-#if HAL_USE_SERIAL || defined(__DOXYGEN__)
+#if (HAL_USE_SERIAL == TRUE) || defined(__DOXYGEN__)
 
 /*===========================================================================*/
 /* Driver constants.                                                         */
@@ -38,11 +35,11 @@
  * @name    Serial status flags
  * @{
  */
-#define SD_PARITY_ERROR         32  /**< @brief Parity error happened.      */
-#define SD_FRAMING_ERROR        64  /**< @brief Framing error happened.     */
-#define SD_OVERRUN_ERROR        128 /**< @brief Overflow happened.          */
-#define SD_NOISE_ERROR          256 /**< @brief Noise on the line.          */
-#define SD_BREAK_DETECTED       512 /**< @brief Break detected.             */
+#define SD_PARITY_ERROR         (eventflags_t)32    /**< @brief Parity.     */
+#define SD_FRAMING_ERROR        (eventflags_t)64    /**< @brief Framing.    */
+#define SD_OVERRUN_ERROR        (eventflags_t)128   /**< @brief Overflow.   */
+#define SD_NOISE_ERROR          (eventflags_t)256   /**< @brief Line noise. */
+#define SD_BREAK_DETECTED       (eventflags_t)512   /**< @brief LIN Break.  */
 /** @} */
 
 /*===========================================================================*/
@@ -304,7 +301,7 @@ extern "C" {
 }
 #endif
 
-#endif /* HAL_USE_SERIAL */
+#endif /* HAL_USE_SERIAL == TRUE */
 
 #endif /* _SERIAL_H_ */
 

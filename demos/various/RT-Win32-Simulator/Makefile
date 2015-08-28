@@ -21,7 +21,7 @@ CC   = $(TRGT)gcc
 AS   = $(TRGT)gcc -x assembler-with-cpp
 
 # List all default C defines here, like -D_DEBUG=1
-DDEFS = -DSIMULATOR -DSHELL_USE_IPRINTF=FALSE
+DDEFS = -DSIMULATOR
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
@@ -58,12 +58,12 @@ UADEFS =
 # Imported source files
 CHIBIOS = ../../..
 include $(CHIBIOS)/os/hal/boards/simulator/board.mk
-include ${CHIBIOS}/os/hal/hal.mk
-include ${CHIBIOS}/os/hal/ports/simulator/win32/platform.mk
+include $(CHIBIOS)/os/hal/hal.mk
+include $(CHIBIOS)/os/hal/ports/simulator/win32/platform.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
-include ${CHIBIOS}/os/rt/ports/SIMIA32/compilers/GCC/port.mk
-include ${CHIBIOS}/os/rt/rt.mk
-include ${CHIBIOS}/test/rt/test.mk
+include $(CHIBIOS)/os/rt/ports/SIMIA32/compilers/GCC/port.mk
+include $(CHIBIOS)/os/rt/rt.mk
+include $(CHIBIOS)/test/rt/test.mk
 
 # List C source files here
 SRC =  $(PORTSRC) \
@@ -73,9 +73,9 @@ SRC =  $(PORTSRC) \
        $(OSALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       ${CHIBIOS}/os/various/shell.c \
-       ${CHIBIOS}/os/various/memstreams.c \
-       ${CHIBIOS}/os/various/chprintf.c \
+       $(CHIBIOS)/os/various/shell.c \
+       $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
+       $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        main.c
 
 # List ASM source files here
@@ -84,7 +84,7 @@ ASRC =
 # List all user directories here
 UINCDIR = $(PORTINC) $(KERNINC) $(TESTINC) \
           $(HALINC) $(OSALINC) $(PLATFORMINC) $(BOARDINC) \
-          ${CHIBIOS}/os/various
+          $(CHIBIOS)/os/hal/lib/streams $(CHIBIOS)/os/various
 
 # List the user directory to look for the libraries here
 ULIBDIR =
@@ -93,12 +93,11 @@ ULIBDIR =
 ULIBS =
 
 # Define optimisation level here
-OPT = -ggdb -O2 -fomit-frame-pointer
+OPT = -ggdb -O2
 
 #
 # End of user defines
 ##############################################################################################
-
 
 INCDIR  = $(patsubst %,-I%,$(DINCDIR) $(UINCDIR))
 LIBDIR  = $(patsubst %,-L%,$(DLIBDIR) $(ULIBDIR))
@@ -109,7 +108,7 @@ LIBS    = $(DLIBS) $(ULIBS)
 
 LDFLAGS = -Wl,-Map=$(PROJECT).map,--cref,--no-warn-mismatch $(LIBDIR)
 ASFLAGS = -Wa,-amhls=$(<:.s=.lst) $(ADEFS)
-CPFLAGS = $(OPT) -Wall -Wextra -Wstrict-prototypes -fverbose-asm -Wa,-alms=$(<:.c=.lst) $(DEFS)
+CPFLAGS = -Wall -Wextra -Wundef -Wstrict-prototypes -fverbose-asm -Wa,-alms=$(<:.c=.lst) $(DEFS)
 
 # Generate dependency information
 CPFLAGS += -MD -MP -MF .dep/$(@F).d
@@ -121,13 +120,13 @@ CPFLAGS += -MD -MP -MF .dep/$(@F).d
 all: $(OBJS) $(PROJECT).exe
 
 %.o : %.c
-	$(CC) -c $(CPFLAGS) -I . $(INCDIR) $< -o $@
+	$(CC) -c $(OPT) $(CPFLAGS) -I . $(INCDIR) $< -o $@
 
 %.o : %.s
-	$(AS) -c $(ASFLAGS) $< -o $@
+	$(AS) -c $(OPT) $(ASFLAGS) $< -o $@
 
 %exe: $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+	$(CC) $(OPT) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 
 gcov:
 	-mkdir gcov

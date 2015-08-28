@@ -18,13 +18,13 @@
 */
 
 /**
- * @file    GCC/ARMCMx/MK20Dx/cmparams.h
- * @brief   ARM Cortex-M4 parameters for the Kinetis MK20Dx.
+ * @file    GCC/ARMCMx/K20x5/cmparams.h
+ * @brief   ARM Cortex-M4 parameters for the Kinetis K20x5.
  *
- * @defgroup ARMCMx_MK20Dx Kinetis MK20Dx Specific Parameters
+ * @defgroup ARMCMx_K20x5 Kinetis K20x5 Specific Parameters
  * @ingroup ARMCMx_SPECIFIC
  * @details This file contains the Cortex-M4 specific parameters for the
- *          Kinetis MK20Dx platform.
+ *          Kinetis K20x5 platform.
  * @{
  */
 
@@ -34,7 +34,7 @@
 /**
  * @brief   Cortex core model.
  */
-#define CORTEX_MODEL            CORTEX_M4
+#define CORTEX_MODEL            4
 
 /**
  * @brief   Systick unit presence.
@@ -65,7 +65,11 @@
 /* Including the device CMSIS header. Note, we are not using the definitions
    from this header because we need this file to be usable also from
    assembler source files. We verify that the info matches instead.*/
-#include "mk20d5.h"
+#include "k20x5.h"
+
+#if CORTEX_MODEL != __CORTEX_M
+#error "CMSIS __CORTEX_M mismatch"
+#endif
 
 #if CORTEX_PRIORITY_BITS != __NVIC_PRIO_BITS
 #error "CMSIS __NVIC_PRIO_BITS mismatch"
