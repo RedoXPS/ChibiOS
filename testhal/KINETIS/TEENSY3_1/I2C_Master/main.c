@@ -30,8 +30,6 @@ static THD_FUNCTION(Thread1, arg) {
     }
     chThdSleepMilliseconds(10);
   }
-
-  return 0;
 }
 
 static I2CConfig i2ccfg = {
