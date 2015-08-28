@@ -1,5 +1,5 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006-2014 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -52,6 +52,13 @@
 #endif
 
 /**
+ * @brief   Enables the DAC subsystem.
+ */
+#if !defined(HAL_USE_DAC) || defined(__DOXYGEN__)
+#define HAL_USE_DAC                 FALSE
+#endif
+
+/**
  * @brief   Enables the EXT subsystem.
  */
 #if !defined(HAL_USE_EXT) || defined(__DOXYGEN__)
@@ -69,13 +76,7 @@
  * @brief   Enables the I2C subsystem.
  */
 #if !defined(HAL_USE_I2C) || defined(__DOXYGEN__)
-#define HAL_USE_I2C                 FALSE
-#endif
-/**
- * @brief   Enables the I2C Slave subsystem.
- */
-#if !defined(HAL_USE_I2C_SLAVE) || defined(__DOXYGEN__)
-#define HAL_USE_I2C_SLAVE           TRUE
+#define HAL_USE_I2C                 TRUE
 #endif
 
 /**
@@ -131,7 +132,7 @@
  * @brief   Enables the SERIAL subsystem.
  */
 #if !defined(HAL_USE_SERIAL) || defined(__DOXYGEN__)
-#define HAL_USE_SERIAL              TRUE
+#define HAL_USE_SERIAL              FALSE
 #endif
 
 /**
@@ -160,6 +161,31 @@
  */
 #if !defined(HAL_USE_USB) || defined(__DOXYGEN__)
 #define HAL_USE_USB                 FALSE
+#endif
+
+/*===========================================================================*/
+/* Custom drivers                                                            */
+/*===========================================================================*/
+
+/**
+ * @brief   Enables the EEPROM subsystem.
+ */
+#if !defined(HAL_USE_EEPROM) || defined(__DOXYGEN__)
+#define HAL_USE_EEPROM              FALSE
+#endif
+
+/**
+ * @brief   Enables the I2C_SLAVE subsystem.
+ */
+#if !defined(HAL_USE_I2C_SLAVE) || defined(__DOXYGEN__)
+#define HAL_USE_I2C_SLAVE           TRUE
+#endif
+
+/**
+ * @brief   Enables the mutual exclusion APIs on the I2C bus.
+ */
+#if !defined(I2C_SLAVE_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
+#define I2C_SLAVE_USE_MUTUAL_EXCLUSION    TRUE
 #endif
 
 /*===========================================================================*/

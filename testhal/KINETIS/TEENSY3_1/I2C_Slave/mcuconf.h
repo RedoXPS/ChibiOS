@@ -1,5 +1,5 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006-2014 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
     limitations under the License.
 */
 
+#ifndef _MCUCONF_H_
+#define _MCUCONF_H_
+
 #define K20x_MCUCONF
 
 /*
  * HAL driver system settings.
  */
-
-/*
- * SERIAL driver system settings.
- */
-#define KINETIS_SERIAL_USE_UART0              TRUE
+#define KINETIS_PLLCLK_FREQUENCY  (96000000L)
+#define KINETIS_SYSCLK_FREQUENCY  (48000000L)
 
 /*
  * I2C driver system settings.
@@ -35,3 +35,4 @@
  */
 #define KINETIS_I2C_SLAVE_USE_I2C0            TRUE
 
+#endif /* _MCUCONF_H_ */

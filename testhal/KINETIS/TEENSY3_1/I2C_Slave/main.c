@@ -14,7 +14,6 @@
     limitations under the License.
 */
 #include "hal.h"
-#include "chprintf.h"
 
 #include "i2c_slave.h"
 
@@ -24,7 +23,6 @@ void start_cb(I2CSlaveDriver *i2cp,uint8_t c)
 {
   (void)i2cp;
   (void)c;
-  //~ chprintf((BaseSequentialStream *)&SD1,"\r\n[(%X) ",c);
 }
 
 void endrx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
@@ -37,7 +35,6 @@ void endrx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
   }
   _i2cs_tx[2]++;
   i2cp->txbytes=n;
-  //~ chprintf((BaseSequentialStream *)&SD1,"r%X",i2cp->txbuf[2]);
 }
 
 void endtx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
@@ -45,7 +42,6 @@ void endtx_cb(I2CSlaveDriver *i2cp,uint8_t *buf, size_t n)
   (void)i2cp;
   (void)buf;
   (void)n;
-  //~ chprintf((BaseSequentialStream *)&SD1,"t");
 }
 
 static I2CSlaveConfig i2cscfg = {
@@ -57,10 +53,6 @@ static I2CSlaveConfig i2cscfg = {
   //~ NULL,   // Tx Byte
   endtx_cb,   // Tx End
   //~ NULL,   // Error
-};
-
-static SerialConfig sercfg = {
-  115200
 };
 
 /*
@@ -76,7 +68,6 @@ int main(void) {
    */
   halInit();
   chSysInit();
-  sdStart(&SD1, &sercfg);
 
   i2cSlaveInit();
   i2cSlaveObjectInit(&I2CSD1);
