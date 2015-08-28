@@ -72,7 +72,7 @@ void eepromObjectInit(EEPROMDriver *eepp) {
   eepp->state  = EEPROM_STOP;
   eepp->config = NULL;
 
-#if EEPROM_SLAVE_USE_MUTUAL_EXCLUSION
+#if EEPROM_USE_MUTUAL_EXCLUSION
   osalMutexObjectInit(&eepp->mutex);
 #endif /* EEPROM_USE_MUTUAL_EXCLUSION */
 
