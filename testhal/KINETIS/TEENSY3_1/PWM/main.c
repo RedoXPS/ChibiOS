@@ -30,8 +30,8 @@ static void pwmc1cb(PWMDriver *pwmp) {
 }
 
 static PWMConfig pwmcfg = {
-  36000000,                                   /* 36MHz PWM clock frequency.   */
-  36000,                                        /* Initial PWM period 1ms     */
+  24000000,                                   /* 48MHz PWM clock frequency.   */
+  24000,                                        /* Initial PWM period 1ms     */
   pwmpcb,
   {
     {PWM_OUTPUT_ACTIVE_HIGH, NULL},
@@ -74,7 +74,7 @@ int main(void) {
    * Changes PWM period to 500µs the duty cycle becomes 50%
    * implicitly.
    */
-  pwmChangePeriod(&PWMD1, 18000);
+  pwmChangePeriod(&PWMD1, 12000);
   chThdSleepMilliseconds(2500);
   //~ pwmEnablePeriodicNotification(&PWMD1);
   /*
