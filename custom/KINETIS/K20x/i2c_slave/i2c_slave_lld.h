@@ -51,7 +51,7 @@
  * @note    The default is @p FALSE.
  */
 #if !defined(KINETIS_I2C_SLAVE_USE_I2C1) || defined(__DOXYGEN__)
-#define KINETIS_I2C_SLAVE_USE_I2C                  FALSE
+#define KINETIS_I2C_SLAVE_USE_I2C1                 FALSE
 #endif
 /** @} */
 
