@@ -128,6 +128,29 @@ void hal_lld_init(void) {
 
 #if defined(STM32_DMA_REQUIRED)
   dmaInit();
+
+#if defined(STM32F7XX)
+  /* If the DMA is in use then the DMA-accessible RAM must be programmed as
+     Write Through using the MPU, region zero is used with a size of 512kB,
+     the sub-regions are programmed as follow:
+     - 0,,   disabled, it is the normal the DTCM RAM.
+     - 1..4, enabled, it is the normal, DMA-accessible, RAM.
+     - 5..7, disabled, beyond RAM area.
+     The system memory layout is used as "background" for the MPU regions.*/
+  mpuConfigureRegion(MPU_REGION_0,
+                     0x20000000U,
+                     MPU_RASR_ATTR_AP_RW_RW |
+                     MPU_RASR_ATTR_CACHEABLE_WT_NWA |
+                     MPU_RASR_SRD_DISABLE_SUB0 | MPU_RASR_SRD_DISABLE_SUB5 |
+                     MPU_RASR_SRD_DISABLE_SUB6 | MPU_RASR_SRD_DISABLE_SUB7 |
+                     MPU_RASR_SIZE_512K |
+                     MPU_RASR_ENABLE);
+  mpuEnable(MPU_CTRL_PRIVDEFENA);
+
+  /* Invalidating data cache to make sure that the MPU settings are taken
+     immediately.*/
+  SCB_CleanInvalidateDCache();
+#endif
 #endif
 
   /* Programmable voltage detector enable.*/
@@ -230,9 +253,7 @@ void stm32_clock_init(void) {
   /* PLLSAI activation.*/
   RCC->PLLSAICFGR = STM32_PLLSAIR | STM32_PLLSAIQ | STM32_PLLSAIP |
                     STM32_PLLSAIN;
-  RCC->DCKCFGR1 = /*STM32_TIMPRE | */STM32_SAI2SEL | STM32_SAI1SEL |
-                  STM32_PLLSAIDIVR;
-  RCC->CR |= RCC_CR_PLLSAION;
+ RCC->CR |= RCC_CR_PLLSAION;
 
   /* Waiting for PLL lock.*/
   while (!(RCC->CR & RCC_CR_PLLSAIRDY))
@@ -243,6 +264,22 @@ void stm32_clock_init(void) {
   RCC->CFGR = STM32_MCO2SEL | STM32_MCO2PRE | STM32_MCO1PRE | STM32_I2SSRC |
               STM32_MCO1SEL | STM32_RTCPRE  | STM32_PPRE2   | STM32_PPRE1  |
               STM32_HPRE;
+
+  /* DCKCFGR1 register initialization, note, must take care of the _OFF
+     pseudo settings.*/
+  {
+    uint32_t dckcfgr1 = 0;
+#if STM32_SAI2SEL != STM32_SAI2SEL_OFF
+    dckcfgr1 |= STM32_SAI2SEL;
+#endif
+#if STM32_SAI1SEL != STM32_SAI1SEL_OFF
+    dckcfgr1 |= STM32_SAI1SEL;
+#endif
+#if STM32_PLLSAIDIVR != STM32_PLLSAIDIVR_OFF
+    dckcfgr1 |= STM32_PLLSAIDIVR;
+#endif
+    RCC->DCKCFGR1 = dckcfgr1;
+  }
 
   /* Peripheral clock sources.*/
   RCC->DCKCFGR2 = STM32_SDMMCSEL  | STM32_CK48MSEL  | STM32_CECSEL    |
