@@ -133,6 +133,7 @@
 #define KINETIS_PDB_IRQ_VECTOR              VectorC8
 
 /* USB attributes */
+#define KINETIS_HAS_USB                     TRUE
 #define KINETIS_USB_IRQ_VECTOR              VectorCC
 #define KINETIS_USBCD_IRQ_VECTOR            VectorD0
 
