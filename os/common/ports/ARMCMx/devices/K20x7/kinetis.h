@@ -165,6 +165,7 @@
 #define KINETIS_PDB_IRQ_VECTOR              Vector160
 
 /* USB attributes */
+#define KINETIS_HAS_USB                     TRUE
 #define KINETIS_USB_IRQ_VECTOR              Vector164
 #define KINETIS_USBCD_IRQ_VECTOR            Vector168
 
